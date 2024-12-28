@@ -28,6 +28,9 @@ const assignments = ['Unassigned', 'Magenta', 'Orange', 'Red', 'Blue', 'Green', 
 
 let customLabels = JSON.parse(localStorage.getItem('customLabels')) || {};
 
+// Add to the top with other constants
+let dashboardTitle = localStorage.getItem('dashboardTitle') || 'Cleaning Dashboard';
+
 function saveFilters() {
     localStorage.setItem('activeFilters', JSON.stringify(Array.from(activeFilters)));
 }
@@ -256,32 +259,44 @@ function showContextMenu(e, colorFilter) {
 function applyLabel() {
     const menu = document.getElementById('colorLabelMenu');
     const input = document.getElementById('labelInput');
-    const assignment = menu.dataset.currentAssignment;
     
-    // Save the custom label
-    customLabels[assignment] = input.value;
-    localStorage.setItem('customLabels', JSON.stringify(customLabels));
-    
-    // Update all matching color filter labels
-    document.querySelectorAll(`.color-filter[data-assignment="${assignment}"] span`).forEach(span => {
-        span.textContent = input.value;
-    });
+    if (menu.dataset.editingTitle === 'true') {
+        // Updating dashboard title
+        dashboardTitle = input.value;
+        localStorage.setItem('dashboardTitle', dashboardTitle);
+        document.querySelector('.dashboard-title').textContent = dashboardTitle;
+        delete menu.dataset.editingTitle;
+    } else {
+        // Existing color label update logic
+        const assignment = menu.dataset.currentAssignment;
+        customLabels[assignment] = input.value;
+        localStorage.setItem('customLabels', JSON.stringify(customLabels));
+        document.querySelectorAll(`.color-filter[data-assignment="${assignment}"] span`).forEach(span => {
+            span.textContent = input.value;
+        });
+    }
     
     hideContextMenu();
 }
 
 function resetLabel() {
     const menu = document.getElementById('colorLabelMenu');
-    const assignment = menu.dataset.currentAssignment;
     
-    // Remove the custom label
-    delete customLabels[assignment];
-    localStorage.setItem('customLabels', JSON.stringify(customLabels));
-    
-    // Reset all matching color filter labels
-    document.querySelectorAll(`.color-filter[data-assignment="${assignment}"] span`).forEach(span => {
-        span.textContent = defaultLabels[assignment];
-    });
+    if (menu.dataset.editingTitle === 'true') {
+        // Reset dashboard title
+        dashboardTitle = 'Cleaning Dashboard';
+        localStorage.removeItem('dashboardTitle');
+        document.querySelector('.dashboard-title').textContent = dashboardTitle;
+        delete menu.dataset.editingTitle;
+    } else {
+        // Existing color label reset logic
+        const assignment = menu.dataset.currentAssignment;
+        delete customLabels[assignment];
+        localStorage.setItem('customLabels', JSON.stringify(customLabels));
+        document.querySelectorAll(`.color-filter[data-assignment="${assignment}"] span`).forEach(span => {
+            span.textContent = defaultLabels[assignment];
+        });
+    }
     
     hideContextMenu();
 }
@@ -289,6 +304,26 @@ function resetLabel() {
 function hideContextMenu() {
     const menu = document.getElementById('colorLabelMenu');
     menu.classList.remove('active');
+}
+
+function showTitleContextMenu(e, titleElement) {
+    e.preventDefault();
+    const menu = document.getElementById('colorLabelMenu');
+    const input = document.getElementById('labelInput');
+    
+    // Position the menu at the click location
+    menu.style.left = `${e.pageX}px`;
+    menu.style.top = `${e.pageY}px`;
+    
+    // Set the current title in the input
+    input.value = dashboardTitle;
+    
+    // Mark this as a title edit
+    menu.dataset.editingTitle = 'true';
+    
+    // Show the menu
+    menu.classList.add('active');
+    input.focus();
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -426,5 +461,13 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (e.key === 'Escape') {
             hideContextMenu();
         }
+    });
+
+    // Set initial dashboard title
+    document.querySelector('.dashboard-title').textContent = dashboardTitle;
+
+    // Add context menu for dashboard title
+    document.querySelector('.dashboard-title').addEventListener('contextmenu', (e) => {
+        showTitleContextMenu(e, e.target);
     });
 }); 

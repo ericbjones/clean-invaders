@@ -17,3 +17,5 @@ tasks:
     icon: fire
   - name: Organize Fridge
     icon: temperature-low 
+  - name: Pantry
+    icon: door-open

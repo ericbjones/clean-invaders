@@ -436,4 +436,15 @@ header h1 i {
     background: linear-gradient(45deg, #FFF, #FF00FF, #FFA500, #FF6B6B, #4169E1, #95D44A, #4ECDC4);
     -webkit-background-clip: text;
     color: transparent;
+}
+
+.dashboard-title {
+    cursor: context-menu;
+}
+
+.dashboard-title:hover {
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 4px;
 } 

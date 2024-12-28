@@ -1,0 +1,15 @@
+# FontAwesome icons reference: https://fontawesome.com/v6/search?o=r&m=free
+icon: toilet
+tasks:
+  - name: Clean Toilet
+    icon: pump-soap
+  - name: Mop Floor
+    icon: broom
+  - name: Clean Mirror
+    icon: square
+  - name: Empty Trash
+    icon: trash
+  - name: Replace Hand Towels
+    icon: bath
+  - name: Wipe Counter
+    icon: sink 

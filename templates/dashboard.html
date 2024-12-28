@@ -19,6 +19,9 @@
                 <button onclick="setView('all')" class="active">All Floors</button>
                 <button onclick="setView('upstairs')">Upstairs</button>
                 <button onclick="setView('downstairs')">Downstairs</button>
+                <button onclick="toggleShowHidden()" id="show-hidden-btn" class="show-hidden">
+                    <i class="fas fa-eye"></i> Show Hidden
+                </button>
                 <button onclick="resetTasks()" style="float: right;">Reset Tasks</button>
             </div>
             <div class="assignment-filters">
@@ -108,6 +111,9 @@
                             <button onclick="resetRoom('{{ floor }}', '{{ room_name }}')" class="btn-reset">
                                 <i class="fas fa-redo-alt"></i> Reset Room
                             </button>
+                            <button onclick="toggleRoomHidden('{{ floor }}', '{{ room_name }}')" class="btn-hide">
+                                <i class="fas fa-eye-slash"></i> Hide Room
+                            </button>
                         </div>
                     </div>
                     {% endfor %}
@@ -115,6 +121,10 @@
             </div>
             {% endfor %}
         </div>
+    </div>
+    
+    <div class="context-menu" id="showHiddenMenu">
+        <button onclick="resetHidden()">Reset Hidden Rooms</button>
     </div>
     
     <div class="context-menu" id="colorLabelMenu">

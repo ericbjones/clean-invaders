@@ -1,0 +1,15 @@
+# FontAwesome icons reference: https://fontawesome.com/v6/search?o=r&m=free
+icon: desktop
+tasks:
+  - name: Dust Desk
+    icon: desktop
+  - name: Organize Papers
+    icon: folder
+  - name: Empty Trash
+    icon: trash
+  - name: Vacuum Floor
+    icon: broom
+  - name: Clean Window
+    icon: window-maximize
+  - name: Wipe Electronics
+    icon: laptop 

@@ -1,0 +1,15 @@
+# FontAwesome icons reference: https://fontawesome.com/v6/search?o=r&m=free
+icon: door-open
+tasks:
+  - name: Sweep Floor
+    icon: broom
+  - name: Clean Door
+    icon: door-open
+  - name: Organize Shoes
+    icon: shoe-prints
+  - name: Clean Mirror
+    icon: square     
+  - name: Dust Console
+    icon: table
+  - name: Clean Windows
+    icon: window-maximize 

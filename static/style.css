@@ -1,12 +1,12 @@
 :root {
     --bg-color: #0a0b1e;
-    --card-bg: rgba(26, 27, 59, 0.7);
+    --card-bg: rgba(26, 27, 59, 0.75);
     --text-color: #e0e0ff;
     --accent-color: #00ff9d;
-    --progress-bg: rgba(42, 43, 75, 0.7);
+    --progress-bg: rgba(42, 43, 75, 0.75);
     --header-bg: rgba(21, 22, 50, 0.8);
     --glow-color: rgba(0, 255, 157, 0.15);
-    --star-color: rgba(255, 255, 255, 0.5);
+    --star-color: rgba(255, 255, 255, 0.7);
     --nebula-color: rgba(0, 255, 157, 0.05);
 }
 
@@ -16,12 +16,15 @@ body {
     font-family: 'Segoe UI', sans-serif;
     background-color: var(--bg-color);
     background-image: 
-        radial-gradient(2px 2px at 20px 30px, var(--star-color), rgba(0,0,0,0)),
-        radial-gradient(2px 2px at 40px 70px, var(--star-color), rgba(0,0,0,0)),
-        radial-gradient(2px 2px at 50px 160px, var(--star-color), rgba(0,0,0,0)),
-        radial-gradient(2px 2px at 90px 40px, var(--star-color), rgba(0,0,0,0));
+        radial-gradient(3px 3px at 20px 30px, var(--star-color), rgba(0,0,0,0)),
+        radial-gradient(3px 3px at 40px 70px, var(--star-color), rgba(0,0,0,0)),
+        radial-gradient(3px 3px at 50px 160px, var(--star-color), rgba(0,0,0,0)),
+        radial-gradient(3px 3px at 90px 40px, var(--star-color), rgba(0,0,0,0)),
+        radial-gradient(3px 3px at 130px 90px, var(--star-color), rgba(0,0,0,0)),
+        radial-gradient(3px 3px at 160px 120px, var(--star-color), rgba(0,0,0,0));
     background-repeat: repeat;
     background-size: 200px 200px;
+    background-attachment: fixed;
     color: var(--text-color);
 }
 
@@ -82,19 +85,7 @@ button.active {
 }
 
 .room-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-image: 
-        radial-gradient(1px 1px at 10px 10px, var(--star-color), rgba(0,0,0,0)),
-        radial-gradient(1px 1px at 20px 30px, var(--star-color), rgba(0,0,0,0));
-    background-size: 50px 50px;
-    opacity: 0.3;
-    pointer-events: none;
-    animation: twinkle 4s ease-in-out infinite;
+    display: none;
 }
 
 .rooms {
@@ -307,9 +298,9 @@ button.active {
 }
 
 @keyframes twinkle {
-    0% { opacity: 0.3; }
+    0% { opacity: 0.4; }
     50% { opacity: 0.8; }
-    100% { opacity: 0.3; }
+    100% { opacity: 0.4; }
 }
 
 .dashboard-title {
@@ -391,4 +382,80 @@ button.active {
 
 .room-complete-shake {
     animation: room-complete-shake 0.8s ease-in-out;
+}
+
+.show-hidden {
+    margin-left: 10px;
+}
+
+.btn-hide {
+    margin-left: 10px;
+    background: var(--card-bg);
+    color: var(--text-color);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-hide:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: var(--accent-color);
+    box-shadow: 0 0 10px var(--glow-color);
+}
+
+#showHiddenMenu {
+    position: fixed;
+    display: none;
+    background: var(--card-bg);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    padding: 5px;
+    z-index: 1000;
+}
+
+#showHiddenMenu button {
+    display: block;
+    width: 100%;
+    padding: 8px 12px;
+    border: none;
+    background: none;
+    text-align: left;
+    cursor: pointer;
+    color: var(--text-color);
+}
+
+#showHiddenMenu button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.room-card.is-hidden {
+    opacity: 0.6;
+    background: rgba(26, 27, 59, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.room-card.is-hidden::before {
+    display: none;
+}
+
+.room-card.is-hidden:hover {
+    opacity: 0.8;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 20px var(--glow-color);
+}
+
+.room-view.room-complete-shake {
+    animation: room-complete-shake 0.8s ease-in-out;
+}
+
+.room-view .task.large {
+    position: relative;
+    transform-origin: center;
+}
+
+.room-view .task.large.task-complete-shake {
+    animation: task-complete-shake 0.2s ease-in-out 3;
 } 

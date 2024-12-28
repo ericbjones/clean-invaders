@@ -1,5 +1,6 @@
 let currentView = 'all';
 let activeFilters = new Set(['all']);
+let showHidden = false;
 
 // Move assignmentMap to the top level so it's available to all functions
 const assignmentMap = {
@@ -27,9 +28,6 @@ const defaultLabels = {
 const assignments = ['Unassigned', 'Magenta', 'Orange', 'Red', 'Blue', 'Green', 'Cyan'];
 
 let customLabels = JSON.parse(localStorage.getItem('customLabels')) || {};
-
-// Add to the top with other constants
-let dashboardTitle = localStorage.getItem('dashboardTitle') || 'Cleaning Dashboard';
 
 // Add at the top with other constants
 const SOUNDS = {
@@ -100,7 +98,54 @@ function updateProgress(floor, room, task, progress) {
             task: task,
             progress: progress
         })
+    })
+    .then(response => {
+        if (!response.ok) throw new Error('Network response was not ok');
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            // Update the progress bar immediately
+            const progressBar = document.getElementById(`${floor}-${room}-${task}-progress`);
+            if (progressBar) {
+                progressBar.style.width = `${progress}%`;
+            }
+            // Also update room and floor progress
+            updateRoomAndFloorProgress(floor, room);
+        }
+        return data;
     });
+}
+
+function updateRoomAndFloorProgress(floor, room) {
+    // Calculate room progress
+    const roomTasks = document.querySelectorAll(`.task[data-floor="${floor}"][data-room="${room}"] .progress`);
+    let roomTotal = 0;
+    roomTasks.forEach(taskProgress => {
+        roomTotal += parseInt(taskProgress.style.width) || 0;
+    });
+    const roomProgress = roomTasks.length > 0 ? roomTotal / roomTasks.length : 0;
+    
+    // Update room progress bar
+    const roomProgressBar = document.getElementById(`${floor}-${room}-progress`);
+    if (roomProgressBar) {
+        roomProgressBar.style.width = `${roomProgress}%`;
+    }
+    
+    // Calculate floor progress
+    const floorRooms = document.querySelectorAll(`.floor[data-floor="${floor}"] .room-card`);
+    let floorTotal = 0;
+    floorRooms.forEach(roomCard => {
+        const roomProgressBar = roomCard.querySelector('.progress');
+        floorTotal += parseInt(roomProgressBar?.style.width) || 0;
+    });
+    const floorProgress = floorRooms.length > 0 ? floorTotal / floorRooms.length : 0;
+    
+    // Update floor progress bar
+    const floorProgressBar = document.getElementById(`${floor}-progress`);
+    if (floorProgressBar) {
+        floorProgressBar.style.width = `${floorProgress}%`;
+    }
 }
 
 function loadProgress() {
@@ -116,8 +161,8 @@ function loadProgress() {
                     let roomTotal = 0;
                     let roomCount = 0;
                     
-                    for (const task in data[floor][room]) {
-                        const taskData = data[floor][room][task];
+                    for (const task in data[floor][room].tasks) {
+                        const taskData = data[floor][room].tasks[task];
                         const progress = taskData.progress;
                         const assignment = taskData.assignment;
                         
@@ -228,15 +273,43 @@ function updateAssignment(floor, room, task, assignment) {
 
 function updateTaskVisibility() {
     const tasks = document.querySelectorAll('.task');
+    const roomsWithMatchingTasks = new Set();
+    
     tasks.forEach(task => {
         const taskIcon = task.querySelector('.task-header i');
-        const assignmentText = taskIcon.getAttribute('data-assignment');
-        const assignmentIndex = assignmentMap[assignmentText];
+        const currentClass = Array.from(taskIcon.classList)
+            .find(className => className.startsWith('assigned-'));
+        const currentAssignment = currentClass ? currentClass.split('-')[1] : '0';
         
-        if (activeFilters.has('all') || activeFilters.has(assignmentIndex.toString())) {
-            task.classList.remove('hidden');
+        if (activeFilters.has('all') || activeFilters.has(currentAssignment)) {
+            task.style.display = '';
+            // Keep track of rooms that have matching tasks
+            const floor = task.dataset.floor;
+            const room = task.dataset.room;
+            roomsWithMatchingTasks.add(`${floor}-${room}`);
         } else {
-            task.classList.add('hidden');
+            task.style.display = 'none';
+        }
+    });
+
+    // Update room visibility based on whether they have any matching tasks
+    const roomCards = document.querySelectorAll('.room-card');
+    roomCards.forEach(card => {
+        const floor = card.closest('.floor').dataset.floor;
+        const room = card.querySelector('h3').textContent.trim();
+        const roomKey = `${floor}-${room}`;
+        
+        // First check if room should be hidden by filter
+        if (!activeFilters.has('all') && !roomsWithMatchingTasks.has(roomKey)) {
+            card.style.display = 'none';
+            return;
+        }
+        
+        // Then check if room is hidden (only if it passed the filter check)
+        if (card.classList.contains('is-hidden') && !showHidden) {
+            card.style.display = 'none';
+        } else {
+            card.style.display = '';
         }
     });
 }
@@ -269,9 +342,9 @@ function applyLabel() {
     
     if (menu.dataset.editingTitle === 'true') {
         // Updating dashboard title
-        dashboardTitle = input.value;
-        localStorage.setItem('dashboardTitle', dashboardTitle);
-        document.querySelector('.dashboard-title').textContent = dashboardTitle;
+        const newTitle = input.value.trim() || 'Cleaning Dashboard';
+        document.querySelector('.dashboard-title').textContent = newTitle;
+        localStorage.setItem('dashboardTitle', newTitle);
         delete menu.dataset.editingTitle;
     } else {
         // Existing color label update logic
@@ -291,9 +364,9 @@ function resetLabel() {
     
     if (menu.dataset.editingTitle === 'true') {
         // Reset dashboard title
-        dashboardTitle = 'Cleaning Dashboard';
+        const defaultTitle = 'Cleaning Dashboard';
+        document.querySelector('.dashboard-title').textContent = defaultTitle;
         localStorage.removeItem('dashboardTitle');
-        document.querySelector('.dashboard-title').textContent = dashboardTitle;
         delete menu.dataset.editingTitle;
     } else {
         // Existing color label reset logic
@@ -363,51 +436,205 @@ function playRoomCompleteSound() {
     SOUNDS.roomComplete.play().catch(e => console.log('Sound play failed:', e));
 }
 
+function toggleShowHidden() {
+    showHidden = !showHidden;
+    const btn = document.getElementById('show-hidden-btn');
+    btn.innerHTML = `<i class="fas fa-eye${showHidden ? '' : '-slash'}"></i> ${showHidden ? 'Hide Hidden' : 'Show Hidden'}`;
+    updateRoomVisibility();
+}
+
+function toggleRoomHidden(floor, room) {
+    fetch('/api/toggle_room_hidden', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            floor: floor,
+            room: room
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            loadProgress();
+        }
+    });
+}
+
+function resetHidden() {
+    fetch('/api/reset_hidden', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            loadProgress();
+            const menu = document.getElementById('showHiddenMenu');
+            menu.style.display = 'none';
+        }
+    });
+}
+
+function updateRoomVisibility() {
+    fetch('/api/get_progress')
+        .then(response => response.json())
+        .then(data => {
+            const roomCards = document.querySelectorAll('.room-card');
+            roomCards.forEach(card => {
+                const floor = card.closest('.floor').dataset.floor;
+                const room = card.querySelector('h3').textContent.trim();
+                const roomData = data[floor]?.[room];
+                const isHidden = roomData?.hidden === 1;
+                
+                // Update hide button text
+                const hideButton = card.querySelector('.btn-hide');
+                if (hideButton) {
+                    hideButton.innerHTML = isHidden ? 
+                        '<i class="fas fa-eye"></i> Show Room' : 
+                        '<i class="fas fa-eye-slash"></i> Hide Room';
+                }
+                
+                // Update hidden state class
+                if (isHidden) {
+                    card.classList.add('is-hidden');
+                } else {
+                    card.classList.remove('is-hidden');
+                }
+                
+                // Let updateTaskVisibility handle actual visibility
+                updateTaskVisibility();
+            });
+        });
+}
+
+// Add context menu for show hidden button
+const showHiddenBtn = document.getElementById('show-hidden-btn');
+if (showHiddenBtn) {
+    showHiddenBtn.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+        const menu = document.getElementById('showHiddenMenu');
+        menu.style.display = 'block';
+        menu.style.left = e.pageX + 'px';
+        menu.style.top = e.pageY + 'px';
+    });
+}
+
+// Add to existing document click handler for context menus
+document.addEventListener('click', function(e) {
+    const showHiddenMenu = document.getElementById('showHiddenMenu');
+    if (showHiddenMenu && !e.target.closest('#showHiddenMenu') && !e.target.closest('#show-hidden-btn')) {
+        showHiddenMenu.style.display = 'none';
+    }
+});
+
+// Update the loadProgress wrapper to only call updateRoomVisibility in dashboard view
+const originalLoadProgress = loadProgress;
+loadProgress = function() {
+    return originalLoadProgress().then(() => {
+        if (document.getElementById('show-hidden-btn')) {
+            updateRoomVisibility();
+        }
+    });
+};
+
+// Initialize title handling
+function initializeTitleHandling() {
+    const titleElement = document.querySelector('.dashboard-title');
+    if (titleElement) {
+        // Load saved title if it exists
+        const savedTitle = localStorage.getItem('dashboardTitle');
+        if (savedTitle) {
+            titleElement.textContent = savedTitle;
+        }
+
+        // Add context menu handler
+        titleElement.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            const menu = document.getElementById('colorLabelMenu');
+            const input = document.getElementById('labelInput');
+            
+            // Position the menu at the click location
+            menu.style.display = 'block';
+            menu.style.left = e.pageX + 'px';
+            menu.style.top = e.pageY + 'px';
+            
+            // Set the current title in the input
+            input.value = titleElement.textContent;
+            
+            // Mark this as a title edit
+            menu.dataset.editingTitle = 'true';
+            
+            // Show the menu
+            menu.classList.add('active');
+            input.focus();
+        });
+    }
+}
+
+// Add title initialization to DOMContentLoaded
 document.addEventListener('DOMContentLoaded', () => {
+    // Initialize title handling
+    initializeTitleHandling();
+    
     // First load the progress to ensure all tasks are properly initialized
     loadProgress().then(() => {
         // Then load and apply filters
         loadFilters();
+        
+        // Initialize task click handlers
+        initializeTaskHandlers();
     });
-    
+});
+
+function initializeTaskHandlers() {
+    // Initialize task handlers
     document.querySelectorAll('.task').forEach(task => {
+        // Remove any existing event listeners
+        const newTask = task.cloneNode(true);
+        task.parentNode.replaceChild(newTask, task);
+        task = newTask;
+
         const taskIcon = task.querySelector('.task-header i');
         
-        taskIcon.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const floor = task.dataset.floor;
-            const room = task.dataset.room;
-            const taskName = task.dataset.task;
-            
-            // Get current assignment from the class name instead of data attribute
-            const currentClass = Array.from(taskIcon.classList)
-                .find(className => className.startsWith('assigned-'));
-            const currentAssignment = currentClass ? parseInt(currentClass.split('-')[1]) : 0;
-            const newAssignment = (currentAssignment + 1) % 7;
-            
-            updateAssignment(floor, room, taskName, newAssignment)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    // Remove old assignment class
-                    taskIcon.classList.remove(`assigned-${currentAssignment}`);
-                    // Add new assignment class
-                    taskIcon.classList.add(`assigned-${newAssignment}`);
-                    
-                    // Update the tooltip text with custom label if it exists
-                    const label = customLabels[newAssignment.toString()] || defaultLabels[newAssignment.toString()];
-                    taskIcon.setAttribute('data-assignment', label);
-                })
-                .catch(error => {
-                    console.error('Error updating assignment:', error);
-                });
-        });
+        // Assignment click handler
+        if (taskIcon) {
+            taskIcon.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const floor = task.dataset.floor;
+                const room = task.dataset.room;
+                const taskName = task.dataset.task;
+                
+                // Get current assignment from the class name instead of data attribute
+                const currentClass = Array.from(taskIcon.classList)
+                    .find(className => className.startsWith('assigned-'));
+                const currentAssignment = currentClass ? parseInt(currentClass.split('-')[1]) : 0;
+                const newAssignment = (currentAssignment + 1) % 7;
+                
+                updateAssignment(floor, room, taskName, newAssignment)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Remove old assignment class
+                            taskIcon.classList.remove(`assigned-${currentAssignment}`);
+                            // Add new assignment class
+                            taskIcon.classList.add(`assigned-${newAssignment}`);
+                            
+                            // Update the tooltip text with custom label if it exists
+                            const label = customLabels[newAssignment.toString()] || defaultLabels[newAssignment.toString()];
+                            taskIcon.setAttribute('data-assignment', label);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error updating assignment:', error);
+                    });
+            });
+        }
         
-        // Existing task click handler for progress
+        // Progress click handler
         task.addEventListener('click', (e) => {
             if (e.target.closest('.task-header i')) return;
             e.preventDefault();
@@ -439,8 +666,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     setTimeout(() => {
                         if (isRoomComplete(floor, room)) {
                             playRoomCompleteSound();
-                            // Add shake animation to room card
-                            const roomCard = task.closest('.room-card');
+                            // Add shake animation to room card or container
+                            const roomCard = task.closest('.room-card') || task.closest('.room-view');
                             if (roomCard) {
                                 roomCard.classList.add('room-complete-shake');
                                 // Remove animation class after it's done
@@ -454,12 +681,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             updateProgress(floor, room, taskName, newProgress)
-                .then(response => {
-                    if (!response.ok) throw new Error('Network response was not ok');
-                    return response.json();
-                })
-                .then(data => {
-                    loadProgress();
+                .then(() => {
+                    // Update progress bar immediately
+                    progressBar.style.width = `${newProgress}%`;
+                    // Update room progress
+                    updateRoomAndFloorProgress(floor, room);
                 })
                 .catch(error => {
                     console.error('Error updating progress:', error);
@@ -467,69 +693,128 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    document.querySelectorAll('.color-filter').forEach(filter => {
-        filter.addEventListener('click', () => {
-            const assignment = filter.dataset.assignment;
-            
-            if (assignment === 'all') {
-                if (activeFilters.has('all')) {
-                    activeFilters.clear();
-                    document.querySelectorAll('.color-filter').forEach(f => f.classList.remove('active'));
-                } else {
-                    activeFilters.clear();
-                    activeFilters.add('all');
-                    document.querySelectorAll('.color-filter').forEach(f => f.classList.remove('active'));
-                    filter.classList.add('active');
-                }
-            } else {
-                activeFilters.delete('all');
-                document.querySelector('.color-filter[data-assignment="all"]').classList.remove('active');
-                
-                if (activeFilters.has(assignment)) {
-                    activeFilters.delete(assignment);
-                    filter.classList.remove('active');
-                    
-                    if (activeFilters.size === 0) {
-                        activeFilters.add('all');
-                        document.querySelector('.color-filter[data-assignment="all"]').classList.add('active');
-                    }
-                } else {
-                    activeFilters.add(assignment);
-                    filter.classList.add('active');
-                }
-            }
-            
-            saveFilters();  // Save filter state
-            updateTaskVisibility();
-        });
-    });
+    // Initialize color filters
+    initializeColorFilters();
 
-    // Add context menu event listeners
-    document.querySelectorAll('.color-filter').forEach(filter => {
-        filter.addEventListener('contextmenu', (e) => showContextMenu(e, filter));
-    });
-
-    // Hide context menu when clicking outside
+    // Initialize context menu handlers
     document.addEventListener('click', (e) => {
         if (!e.target.closest('#colorLabelMenu')) {
             hideContextMenu();
         }
     });
 
-    // Handle Enter key in input
-    document.getElementById('labelInput').addEventListener('keyup', (e) => {
-        if (e.key === 'Enter') {
-            applyLabel();
-        } else if (e.key === 'Escape') {
-            hideContextMenu();
+    // Initialize label input if it exists
+    const labelInput = document.getElementById('labelInput');
+    if (labelInput) {
+        labelInput.addEventListener('keyup', (e) => {
+            if (e.key === 'Enter') {
+                applyLabel();
+            } else if (e.key === 'Escape') {
+                hideContextMenu();
+            }
+        });
+    }
+}
+
+// Add a jQuery-like contains selector since we're using vanilla JS
+Element.prototype.matches = Element.prototype.matches || Element.prototype.msMatchesSelector;
+Element.prototype.closest = Element.prototype.closest || function (selector) {
+    var el = this;
+    while (el) {
+        if (el.matches(selector)) {
+            return el;
         }
-    });
+        el = el.parentElement;
+    }
+    return null;
+};
 
-    // Set initial dashboard title
-    document.querySelector('.dashboard-title').textContent = dashboardTitle;
+// Add contains selector for case-insensitive text content matching
+HTMLElement.prototype.contains = function(text) {
+    return this.textContent.trim().toLowerCase() === text.toLowerCase();
+};
 
-    // Add context menu for dashboard title
-    document.querySelector('.dashboard-title').addEventListener('contextmenu', (e) => {
-        showTitleContextMenu(e, e.target);
+// Add title context menu handler
+const dashboardTitle = document.querySelector('.dashboard-title');
+if (dashboardTitle) {
+    dashboardTitle.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+        const menu = document.getElementById('colorLabelMenu');
+        const input = document.getElementById('labelInput');
+        
+        // Position the menu at the click location
+        menu.style.display = 'block';
+        menu.style.left = e.pageX + 'px';
+        menu.style.top = e.pageY + 'px';
+        
+        // Set the current title in the input
+        input.value = dashboardTitle.textContent;
+        
+        // Mark this as a title edit
+        menu.dataset.editingTitle = 'true';
+        
+        // Show the menu
+        menu.classList.add('active');
+        input.focus();
     });
-}); 
+}
+
+// Add to DOMContentLoaded to initialize the title
+document.addEventListener('DOMContentLoaded', () => {
+    // Load saved title if it exists
+    const savedTitle = localStorage.getItem('dashboardTitle');
+    if (savedTitle) {
+        const titleElement = document.querySelector('.dashboard-title');
+        if (titleElement) {
+            titleElement.textContent = savedTitle;
+        }
+    }
+    
+    // Rest of the initialization code...
+});
+
+// Update the color filter click handler
+function initializeColorFilters() {
+    const colorFilters = document.querySelectorAll('.color-filter');
+    if (colorFilters.length > 0) {
+        colorFilters.forEach(filter => {
+            filter.addEventListener('click', () => {
+                const assignment = filter.dataset.assignment;
+                
+                if (assignment === 'all') {
+                    if (activeFilters.has('all')) {
+                        activeFilters.clear();
+                        document.querySelectorAll('.color-filter').forEach(f => f.classList.remove('active'));
+                    } else {
+                        activeFilters.clear();
+                        activeFilters.add('all');
+                        document.querySelectorAll('.color-filter').forEach(f => f.classList.remove('active'));
+                        filter.classList.add('active');
+                    }
+                } else {
+                    activeFilters.delete('all');
+                    document.querySelector('.color-filter[data-assignment="all"]').classList.remove('active');
+                    
+                    if (activeFilters.has(assignment)) {
+                        activeFilters.delete(assignment);
+                        filter.classList.remove('active');
+                        
+                        if (activeFilters.size === 0) {
+                            activeFilters.add('all');
+                            document.querySelector('.color-filter[data-assignment="all"]').classList.add('active');
+                        }
+                    } else {
+                        activeFilters.add(assignment);
+                        filter.classList.add('active');
+                    }
+                }
+                
+                saveFilters();  // Save filter state
+                updateTaskVisibility();
+            });
+
+            // Add context menu
+            filter.addEventListener('contextmenu', (e) => showContextMenu(e, filter));
+        });
+    }
+} 

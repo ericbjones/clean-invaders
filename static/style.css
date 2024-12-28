@@ -1,0 +1,439 @@
+:root {
+    --bg-color: #1a1a1a;
+    --card-bg: #2d2d2d;
+    --text-color: #ffffff;
+    --accent-color: #4CAF50;
+    --progress-bg: #404040;
+    --header-bg: #232323;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Arial', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+}
+
+.dashboard {
+    padding: 20px;
+}
+
+header {
+    background-color: var(--header-bg);
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+}
+
+.view-controls {
+    margin-top: 10px;
+}
+
+button {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-right: 10px;
+}
+
+button.active {
+    background-color: var(--accent-color);
+}
+
+.floor {
+    margin-bottom: 30px;
+}
+
+.room-card {
+    background-color: var(--card-bg);
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.rooms {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.progress-bar {
+    background-color: var(--progress-bg);
+    height: 20px;
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 10px 0;
+}
+
+.progress {
+    background-color: var(--accent-color);
+    height: 100%;
+    width: 0%;
+    transition: width 0.3s ease;
+}
+
+.task {
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    cursor: pointer;
+}
+
+.task-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.task i {
+    margin-right: 10px;
+    width: 20px;
+}
+
+.task .progress-bar {
+    height: 8px;
+    margin: 2px 0;
+}
+
+.task:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+.room-header {
+    text-decoration: none;
+    color: var(--text-color);
+    display: block;
+}
+
+.room-header:hover h3 {
+    color: var(--accent-color);
+}
+
+.back-button {
+    margin-bottom: 20px;
+}
+
+.btn-back {
+    color: var(--text-color);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 16px;
+    background-color: var(--card-bg);
+    border-radius: 4px;
+    transition: background-color 0.3s;
+}
+
+.btn-back:hover {
+    background-color: var(--accent-color);
+}
+
+.btn-back i {
+    margin-right: 8px;
+}
+
+.room-view .tasks-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 30px;
+}
+
+.room-view .tasks {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 60px 30px;
+    justify-content: center;
+    padding: 20px;
+}
+
+.room-view .task.large {
+    background-color: var(--card-bg);
+    border-radius: 8px;
+    padding: 25px;
+    margin: 0;
+    height: 160px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.room-view .task.large:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    background-color: var(--card-bg);
+}
+
+.room-view .task.large .task-header {
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.room-view .task.large i {
+    font-size: 2em;
+    margin-right: 15px;
+    width: auto;
+}
+
+.room-view .task.large span {
+    font-size: 1.2em;
+}
+
+.room-view .task.large .progress-bar {
+    height: 12px;
+    margin-top: 15px;
+}
+
+.room-view h1 {
+    margin: 20px 0;
+}
+
+.btn-reset {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    transition: background-color 0.3s;
+}
+
+.btn-reset:hover {
+    background-color: #d32f2f;  /* Red color for reset action */
+}
+
+.btn-reset i {
+    margin-right: 8px;
+}
+
+.room-footer {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* For the room view header */
+.room-view header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 20px;
+}
+
+.room-view header .btn-reset {
+    margin-left: auto;  /* Push reset button to the right */
+}
+
+.room-header h3 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.room-header h3 i {
+    font-size: 1.2em;
+    opacity: 0.8;
+}
+
+.room-view h1 {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.room-view h1 i {
+    font-size: 1.2em;
+    opacity: 0.8;
+}
+
+.floor h2 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.floor h2 i {
+    font-size: 1.1em;
+    opacity: 0.8;
+}
+
+/* Add a bit more space between the icons and the text */
+.floor h2 i:last-of-type {
+    margin-right: 4px;
+}
+
+header h1 {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+header h1 i {
+    font-size: 1.1em;
+    opacity: 0.8;
+}
+
+/* Assignment colors */
+.task-header i.assigned-0 { color: var(--text-color); }  /* Default white */
+.task-header i.assigned-1 { color: #FF00FF; }   /* Magenta */
+.task-header i.assigned-2 { color: #FFA500; }   /* Orange */
+.task-header i.assigned-3 { color: #FF6B6B; }   /* Red */
+.task-header i.assigned-4 { color: #4169E1; }   /* Blue */
+.task-header i.assigned-5 { color: #95D44A; }   /* Green */
+.task-header i.assigned-6 { color: #4ECDC4; }   /* Cyan */
+
+.task-header i {
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+/* Add a tooltip showing assignment */
+.task-header i:hover::after {
+    content: attr(data-assignment);
+    position: absolute;
+    background: var(--card-bg);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    margin-left: 25px;
+    white-space: nowrap;
+}
+
+.assignment-filters {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: var(--card-bg);
+    border-radius: 8px;
+}
+
+.filter-label {
+    display: block;
+    margin-bottom: 10px;
+    opacity: 0.8;
+}
+
+.color-filters {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.color-filter {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background-color: var(--header-bg);
+    border: 2px solid transparent;
+    opacity: 0.7;
+    transition: all 0.3s ease;
+}
+
+.color-filter:hover {
+    opacity: 1;
+}
+
+.color-filter.active {
+    opacity: 1;
+    border-color: var(--accent-color);
+}
+
+.color-filter i {
+    font-size: 0.8em;
+}
+
+/* Make tasks hideable */
+.task {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.task.hidden {
+    display: none;
+    opacity: 0;
+    transform: scale(0.95);
+}
+
+/* Update the task hiding rules */
+.task.hidden,
+.room-view .task.large.hidden {
+    display: none;
+    opacity: 0;
+    transform: scale(0.95);
+}
+
+/* Add these styles for the context menu and label editor */
+.context-menu {
+    position: fixed;
+    background: var(--card-bg);
+    border-radius: 4px;
+    padding: 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    display: none;
+}
+
+.context-menu.active {
+    display: block;
+}
+
+.label-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.label-editor input {
+    background: var(--header-bg);
+    border: 1px solid var(--accent-color);
+    color: var(--text-color);
+    padding: 5px 8px;
+    border-radius: 4px;
+}
+
+.label-editor-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.label-editor-buttons button {
+    margin: 0;
+    padding: 4px 8px;
+    font-size: 0.9em;
+}
+
+.label-editor-buttons .apply {
+    background-color: var(--accent-color);
+}
+
+.label-editor-buttons .reset {
+    background-color: #d32f2f;
+}
+
+/* Color filter circle icons */
+.color-filter i.fa-circle {
+    opacity: 1;  /* Override the default opacity */
+}
+
+.color-filter i.assigned-0 { color: var(--text-color); }  /* White */
+.color-filter i.assigned-1 { color: #FF00FF; }   /* Magenta */
+.color-filter i.assigned-2 { color: #FFA500; }   /* Orange */
+.color-filter i.assigned-3 { color: #FF6B6B; }   /* Red */
+.color-filter i.assigned-4 { color: #4169E1; }   /* Blue */
+.color-filter i.assigned-5 { color: #95D44A; }   /* Green */
+.color-filter i.assigned-6 { color: #4ECDC4; }   /* Cyan */
+
+/* Make the "All" filter circle show a gradient of all colors */
+.color-filter[data-assignment="all"] i.fa-circle {
+    background: linear-gradient(45deg, #FFF, #FF00FF, #FFA500, #FF6B6B, #4169E1, #95D44A, #4ECDC4);
+    -webkit-background-clip: text;
+    color: transparent;
+} 

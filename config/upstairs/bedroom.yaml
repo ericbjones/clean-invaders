@@ -1,0 +1,9 @@
+tasks:
+  - name: Make Bed
+    icon: bed
+  - name: Vacuum Floor
+    icon: broom
+  - name: Dust Surfaces
+    icon: feather
+  - name: Empty Trash
+    icon: trash 

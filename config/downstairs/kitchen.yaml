@@ -1,0 +1,19 @@
+# FontAwesome icons reference: https://fontawesome.com/v6/search?o=r&m=free
+icon: kitchen-set
+tasks:
+  - name: Clean Counters
+    icon: sink
+  - name: Sweep Floor
+    icon: broom
+  - name: Mop Floor
+    icon: brush
+  - name: Empty Trash
+    icon: trash
+  - name: Load Dishwasher
+    icon: soap
+  - name: Wipe Appliances
+    icon: blender
+  - name: Clean Stovetop
+    icon: fire
+  - name: Organize Fridge
+    icon: temperature-low 

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ room_name }} - Cleaning Dashboard</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 640 512'><path fill='%234CAF50' d='M627.6 57.3c-22.6-22.6-53.3-35.3-85.3-35.3-32 0-62.7 12.7-85.3 35.3L389.3 125c-5.7 5.7-10.7 12.1-14.9 18.9l-7.1-7.1c-25-25-65.5-25-90.5 0L166.5 247.1c-25 25-25 65.5 0 90.5l7.1 7.1c-6.8 4.2-13.2 9.2-18.9 14.9l-67.7 67.7c-22.6 22.6-35.3 53.3-35.3 85.3s12.7 62.7 35.3 85.3c22.6 22.6 53.3 35.3 85.3 35.3 32 0 62.7-12.7 85.3-35.3l67.7-67.7c5.7-5.7 10.7-12.1 14.9-18.9l7.1 7.1c25 25 65.5 25 90.5 0L548.9 408c25-25 25-65.5 0-90.5l-7.1-7.1c6.8-4.2 13.2-9.2 18.9-14.9l67.7-67.7c22.6-22.6 35.3-53.3 35.3-85.3s-12.7-62.7-35.3-85.3z'/></svg>"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="dashboard room-view">
+        <header>
+            <div class="back-button">
+                <a href="{{ url_for('dashboard') }}" class="btn-back">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+            <h1>
+                <i class="fas fa-{{ room_data.icon }}"></i>
+                {{ room_name }}
+            </h1>
+            <div class="room-progress">
+                <div class="progress-bar">
+                    <div class="progress" id="{{ floor }}-{{ room_name }}-progress"></div>
+                </div>
+            </div>
+            <div class="assignment-filters">
+                <span class="filter-label">Filter by Assignment:</span>
+                <div class="color-filters">
+                    <button class="color-filter active" data-assignment="all">
+                        <i class="fas fa-circle"></i>
+                        <span>All</span>
+                    </button>
+                    <button class="color-filter" data-assignment="0">
+                        <i class="fas fa-circle assigned-0"></i>
+                        <span>Unassigned</span>
+                    </button>
+                    <button class="color-filter" data-assignment="1">
+                        <i class="fas fa-circle assigned-1"></i>
+                        <span>Magenta</span>
+                    </button>
+                    <button class="color-filter" data-assignment="2">
+                        <i class="fas fa-circle assigned-2"></i>
+                        <span>Orange</span>
+                    </button>
+                    <button class="color-filter" data-assignment="3">
+                        <i class="fas fa-circle assigned-3"></i>
+                        <span>Red</span>
+                    </button>
+                    <button class="color-filter" data-assignment="4">
+                        <i class="fas fa-circle assigned-4"></i>
+                        <span>Blue</span>
+                    </button>
+                    <button class="color-filter" data-assignment="5">
+                        <i class="fas fa-circle assigned-5"></i>
+                        <span>Green</span>
+                    </button>
+                    <button class="color-filter" data-assignment="6">
+                        <i class="fas fa-circle assigned-6"></i>
+                        <span>Cyan</span>
+                    </button>
+                </div>
+            </div>
+            <button onclick="resetRoom('{{ floor }}', '{{ room_name }}')" class="btn-reset">
+                <i class="fas fa-redo-alt"></i> Reset Room
+            </button>
+        </header>
+        
+        <div class="tasks-container">
+            <div class="tasks">
+                {% for task in room_data.tasks %}
+                <div class="task large" data-floor="{{ floor }}" data-room="{{ room_name }}" data-task="{{ task.name }}">
+                    <div class="task-header">
+                        <i class="fas fa-{{ task.icon }} assigned-{{ task.assignment|default(0) }}" 
+                           data-assignment="{{ ['Unassigned', 'Magenta', 'Orange', 'Red', 'Blue', 'Green', 'Cyan'][task.assignment|default(0)] }}"></i>
+                        <span>{{ task.name }}</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress" id="{{ floor }}-{{ room_name }}-{{ task.name }}-progress"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="context-menu" id="colorLabelMenu">
+        <div class="label-editor">
+            <input type="text" id="labelInput" placeholder="Enter label">
+            <div class="label-editor-buttons">
+                <button class="apply" onclick="applyLabel()">Apply</button>
+                <button class="reset" onclick="resetLabel()">Reset</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="{{ url_for('static', filename='dashboard.js') }}"></script>
+</body>
+</html> 

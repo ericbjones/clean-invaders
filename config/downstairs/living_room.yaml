@@ -1,0 +1,11 @@
+# FontAwesome icons reference: https://fontawesome.com/v6/search?o=r&m=free
+icon: couch
+tasks:
+  - name: Vacuum Sofa
+    icon: couch
+  - name: Clean Windows
+    icon: window-maximize
+  - name: Dust TV
+    icon: tv
+  - name: Organize Coffee Table
+    icon: coffee 

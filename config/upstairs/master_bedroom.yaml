@@ -1,0 +1,17 @@
+# FontAwesome icons reference: https://fontawesome.com/v6/search?o=r&m=free
+icon: bed
+tasks:
+  - name: Make Bed
+    icon: bed
+  - name: Vacuum Floor
+    icon: broom
+  - name: Dust Surfaces
+    icon: feather
+  - name: Empty Trash
+    icon: trash
+  - name: Clean Mirrors
+    icon: square
+  - name: Organize Closet
+    icon: shirt
+  - name: Change Sheets
+    icon: blanket 

@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, request, redirect
+from flask import Flask, render_template, jsonify, request, redirect, send_from_directory
 import sqlite3
 import yaml
 import os
@@ -200,6 +200,11 @@ def update_assignment():
             'error': str(e),
             'data': data
         }), 500
+
+# Add this route to serve sound files
+@app.route('/static/sounds/<filename>')
+def serve_sound(filename):
+    return send_from_directory('static/sounds', filename)
 
 if __name__ == '__main__':
     init_db()

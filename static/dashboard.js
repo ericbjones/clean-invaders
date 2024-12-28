@@ -31,6 +31,13 @@ let customLabels = JSON.parse(localStorage.getItem('customLabels')) || {};
 // Add to the top with other constants
 let dashboardTitle = localStorage.getItem('dashboardTitle') || 'Cleaning Dashboard';
 
+// Add at the top with other constants
+const SOUNDS = {
+    progress: new Audio('/static/sounds/zap.mp3'),
+    complete: new Audio('/static/sounds/success.mp3'),
+    roomComplete: new Audio('/static/sounds/huge-success.mp3')
+};
+
 function saveFilters() {
     localStorage.setItem('activeFilters', JSON.stringify(Array.from(activeFilters)));
 }
@@ -326,6 +333,36 @@ function showTitleContextMenu(e, titleElement) {
     input.focus();
 }
 
+// Add sound playing functions
+function playProgressSound() {
+    SOUNDS.progress.currentTime = 0;  // Reset sound to start
+    SOUNDS.progress.play().catch(e => console.log('Sound play failed:', e));
+}
+
+function playCompleteSound() {
+    SOUNDS.complete.currentTime = 0;
+    SOUNDS.complete.play().catch(e => console.log('Sound play failed:', e));
+}
+
+// Add new function to check room completion
+function isRoomComplete(floor, room) {
+    const tasks = document.querySelectorAll(`.task[data-floor="${floor}"][data-room="${room}"]`);
+    for (const task of tasks) {
+        const progressBar = task.querySelector('.progress');
+        const progress = parseInt(progressBar.style.width) || 0;
+        if (progress !== 100) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// Add new function to play room completion sound
+function playRoomCompleteSound() {
+    SOUNDS.roomComplete.currentTime = 0;
+    SOUNDS.roomComplete.play().catch(e => console.log('Sound play failed:', e));
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     // First load the progress to ensure all tasks are properly initialized
     loadProgress().then(() => {
@@ -342,8 +379,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const room = task.dataset.room;
             const taskName = task.dataset.task;
             
-            const currentAssignmentText = taskIcon.getAttribute('data-assignment');
-            const currentAssignment = assignmentMap[currentAssignmentText] || 0;
+            // Get current assignment from the class name instead of data attribute
+            const currentClass = Array.from(taskIcon.classList)
+                .find(className => className.startsWith('assigned-'));
+            const currentAssignment = currentClass ? parseInt(currentClass.split('-')[1]) : 0;
             const newAssignment = (currentAssignment + 1) % 7;
             
             updateAssignment(floor, room, taskName, newAssignment)
@@ -354,8 +393,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     return response.json();
                 })
                 .then(data => {
-                    // Update the icon's class and data attribute
+                    // Remove old assignment class
                     taskIcon.classList.remove(`assigned-${currentAssignment}`);
+                    // Add new assignment class
                     taskIcon.classList.add(`assigned-${newAssignment}`);
                     
                     // Update the tooltip text with custom label if it exists
@@ -369,14 +409,12 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Existing task click handler for progress
         task.addEventListener('click', (e) => {
-            if (e.target.closest('.task-header i')) return;  // Don't handle progress if icon was clicked
+            if (e.target.closest('.task-header i')) return;
             e.preventDefault();
             const floor = task.dataset.floor;
             const room = task.dataset.room;
             const taskName = task.dataset.task;
             const progressBar = document.getElementById(`${floor}-${room}-${taskName}-progress`);
-            
-            console.log('Task clicked:', { floor, room, taskName });  // Debug logging
             
             if (!progressBar) {
                 console.error('Progress bar not found:', `${floor}-${room}-${taskName}-progress`);
@@ -386,17 +424,41 @@ document.addEventListener('DOMContentLoaded', () => {
             const currentProgress = parseInt(progressBar.style.width) || 0;
             const newProgress = (currentProgress + 25) % 125;
             
-            console.log('Updating progress:', { currentProgress, newProgress });  // Debug logging
+            // Play appropriate sound(s)
+            if (newProgress === 100) {
+                // Add shake animation to task
+                task.classList.add('task-complete-shake');
+                // Remove animation class after it's done
+                setTimeout(() => task.classList.remove('task-complete-shake'), 600);
+                
+                // Play task completion sounds
+                playProgressSound();
+                setTimeout(() => {
+                    playCompleteSound();
+                    // Check if room is complete after a short delay
+                    setTimeout(() => {
+                        if (isRoomComplete(floor, room)) {
+                            playRoomCompleteSound();
+                            // Add shake animation to room card
+                            const roomCard = task.closest('.room-card');
+                            if (roomCard) {
+                                roomCard.classList.add('room-complete-shake');
+                                // Remove animation class after it's done
+                                setTimeout(() => roomCard.classList.remove('room-complete-shake'), 800);
+                            }
+                        }
+                    }, 300);
+                }, 200);
+            } else if (newProgress !== 0) {
+                playProgressSound();
+            }
             
             updateProgress(floor, room, taskName, newProgress)
                 .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
+                    if (!response.ok) throw new Error('Network response was not ok');
                     return response.json();
                 })
                 .then(data => {
-                    console.log('Update successful:', data);  // Debug logging
                     loadProgress();
                 })
                 .catch(error => {

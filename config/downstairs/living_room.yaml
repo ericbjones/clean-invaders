@@ -1,11 +1,23 @@
 # FontAwesome icons reference: https://fontawesome.com/v6/search?o=r&m=free
 icon: couch
 tasks:
-  - name: Vacuum Sofa
+  - name: Tidy Sofa
     icon: couch
-  - name: Clean Windows
-    icon: window-maximize
-  - name: Dust TV
-    icon: tv
-  - name: Organize Coffee Table
+  - name: Clear Coffee Table
     icon: coffee 
+  - name: Wipe Coffee Table
+    icon: soap
+  - name: Clear Basket Tables
+    icon: coffee
+  - name: Wipe Basket Tables
+    icon: soap
+  - name: Sweep Floor
+    icon: broom
+  - name: Mop Floor
+    icon: paintbrush
+  - name: Pick Up Trash
+    icon: trash
+  - name: Pick Up Toys
+    icon: gamepad
+  - name: Pick Up Clothes
+    icon: shirt

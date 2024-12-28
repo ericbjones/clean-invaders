@@ -3,13 +3,11 @@ icon: door-open
 tasks:
   - name: Sweep Floor
     icon: broom
-  - name: Clean Door
-    icon: door-open
+  - name: Mop Floor
+    icon: paintbrush
+  - name: Organize Hooks
+    icon: briefcase
   - name: Organize Shoes
     icon: shoe-prints
-  - name: Clean Mirror
-    icon: square     
-  - name: Dust Console
-    icon: table
-  - name: Clean Windows
-    icon: window-maximize 
+  - name: Clear Benches
+    icon: couch

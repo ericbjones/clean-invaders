@@ -1,13 +1,13 @@
 # FontAwesome icons reference: https://fontawesome.com/v6/search?o=r&m=free
 icon: utensils
 tasks:
-  - name: Dust Table
-    icon: utensils
-  - name: Vacuum Floor
+  - name: Clear Table
+    icon: trash
+  - name: Wipe Table & Chairs
+    icon: soap
+  - name: Sweep Floor
     icon: broom
-  - name: Clean Windows
-    icon: window-maximize
-  - name: Dust China Cabinet
-    icon: wine-glass
+  - name: Mop Floor
+    icon: paintbrush
   - name: Arrange Chairs
     icon: chair 

@@ -1,6 +1,7 @@
 let currentView = 'all';
 let activeFilters = new Set(['all']);
 let showHidden = false;
+let showCompleted = false;
 
 // Move assignmentMap to the top level so it's available to all functions
 const assignmentMap = {
@@ -280,8 +281,16 @@ function updateTaskVisibility() {
         const currentClass = Array.from(taskIcon.classList)
             .find(className => className.startsWith('assigned-'));
         const currentAssignment = currentClass ? currentClass.split('-')[1] : '0';
+        const progressBar = task.querySelector('.progress');
+        const isCompleted = parseInt(progressBar.style.width) === 100;
         
-        if (activeFilters.has('all') || activeFilters.has(currentAssignment)) {
+        // Check if task should be visible based on filters and completion
+        let isVisible = activeFilters.has('all') || activeFilters.has(currentAssignment);
+        if (isCompleted && !showCompleted) {
+            isVisible = false;
+        }
+        
+        if (isVisible) {
             task.style.display = '';
             // Keep track of rooms that have matching tasks
             const floor = task.dataset.floor;
@@ -651,31 +660,9 @@ function initializeTaskHandlers() {
             const currentProgress = parseInt(progressBar.style.width) || 0;
             const newProgress = (currentProgress + 25) % 125;
             
-            // Play appropriate sound(s)
+            // Play appropriate sound(s) and handle completion
             if (newProgress === 100) {
-                // Add shake animation to task
-                task.classList.add('task-complete-shake');
-                // Remove animation class after it's done
-                setTimeout(() => task.classList.remove('task-complete-shake'), 600);
-                
-                // Play task completion sounds
-                playProgressSound();
-                setTimeout(() => {
-                    playCompleteSound();
-                    // Check if room is complete after a short delay
-                    setTimeout(() => {
-                        if (isRoomComplete(floor, room)) {
-                            playRoomCompleteSound();
-                            // Add shake animation to room card or container
-                            const roomCard = task.closest('.room-card') || task.closest('.room-view');
-                            if (roomCard) {
-                                roomCard.classList.add('room-complete-shake');
-                                // Remove animation class after it's done
-                                setTimeout(() => roomCard.classList.remove('room-complete-shake'), 800);
-                            }
-                        }
-                    }, 300);
-                }, 200);
+                handleTaskCompletion(task, floor, room);
             } else if (newProgress !== 0) {
                 playProgressSound();
             }
@@ -817,4 +804,89 @@ function initializeColorFilters() {
             filter.addEventListener('contextmenu', (e) => showContextMenu(e, filter));
         });
     }
+}
+
+function toggleShowCompleted() {
+    showCompleted = !showCompleted;
+    const btn = document.getElementById('show-completed-btn');
+    btn.innerHTML = `<i class="fas fa-check"></i> ${showCompleted ? 'Hide Completed' : 'Show Completed'}`;
+    updateTaskVisibility();
+}
+
+function createParticles(task) {
+    const rect = task.getBoundingClientRect();
+    const numParticles = 25;  // Increased number of particles
+    
+    for (let i = 0; i < numParticles; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        
+        // Random angle and increased distance
+        const angle = (Math.random() * Math.PI * 2);
+        const distance = 100 + Math.random() * 200;  // Increased distance range
+        
+        // Calculate final position
+        const tx = Math.cos(angle) * distance;
+        const ty = Math.sin(angle) * distance;
+        
+        // Set particle position and animation
+        particle.style.left = (rect.left + rect.width / 2) + 'px';
+        particle.style.top = (rect.top + rect.height / 2) + 'px';
+        particle.style.setProperty('--tx', `${tx}px`);
+        particle.style.setProperty('--ty', `${ty}px`);
+        
+        document.body.appendChild(particle);
+        
+        // Remove particle after animation (increased to match new animation duration)
+        setTimeout(() => particle.remove(), 800);
+    }
+}
+
+// Update the task completion handler
+function handleTaskCompletion(task, floor, room) {
+    // Add shake animation to task
+    task.classList.add('task-complete-shake');
+    
+    // Remove animation class and start particle effect
+    setTimeout(() => {
+        task.classList.remove('task-complete-shake');
+        task.classList.add('exploding');
+        createParticles(task);
+        
+        // Hide task after explosion
+        setTimeout(() => {
+            task.classList.remove('exploding');
+            if (!showCompleted) {
+                task.style.display = 'none';
+                // Check if room should be hidden (no visible tasks)
+                const visibleTasks = Array.from(task.closest('.tasks').querySelectorAll('.task'))
+                    .filter(t => t.style.display !== 'none');
+                if (visibleTasks.length === 0) {
+                    const roomCard = task.closest('.room-card');
+                    if (roomCard) {
+                        roomCard.style.display = 'none';
+                    }
+                }
+            }
+        }, 600);
+    }, 600);
+    
+    // Play task completion sounds
+    playProgressSound();
+    setTimeout(() => {
+        playCompleteSound();
+        // Check if room is complete after a short delay
+        setTimeout(() => {
+            if (isRoomComplete(floor, room)) {
+                playRoomCompleteSound();
+                // Add shake animation to room card or container
+                const roomCard = task.closest('.room-card') || task.closest('.room-view');
+                if (roomCard) {
+                    roomCard.classList.add('room-complete-shake');
+                    // Remove animation class after it's done
+                    setTimeout(() => roomCard.classList.remove('room-complete-shake'), 800);
+                }
+            }
+        }, 300);
+    }, 200);
 } 

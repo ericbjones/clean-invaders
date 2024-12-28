@@ -6,7 +6,7 @@ tasks:
   - name: Sweep Floor
     icon: broom
   - name: Mop Floor
-    icon: brush
+    icon: paintrush
   - name: Empty Trash
     icon: trash
   - name: Load Dishwasher
@@ -15,7 +15,9 @@ tasks:
     icon: blender
   - name: Clean Stovetop
     icon: fire
+  - name: Clean Microwave
+    icon: microwave
   - name: Organize Fridge
     icon: temperature-low 
-  - name: Pantry
-    icon: door-open
+  - name: Arrange Bar Stools
+    icon: chair

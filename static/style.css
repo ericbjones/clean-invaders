@@ -458,4 +458,54 @@ button.active {
 
 .room-view .task.large.task-complete-shake {
     animation: task-complete-shake 0.2s ease-in-out 3;
+}
+
+.task[style*="width: 100%"] {
+    opacity: 0.7;
+    background: rgba(0, 255, 0, 0.1);
+}
+
+.task[style*="width: 100%"] .progress {
+    background: linear-gradient(to right, #4CAF50, #45a049);
+}
+
+#show-completed-btn {
+    margin-left: 10px;
+}
+
+.particle {
+    position: absolute;
+    pointer-events: none;
+    background: var(--accent-color);
+    border-radius: 50%;
+    width: 8px;
+    height: 8px;
+    animation: particle-fade 0.8s ease-out forwards;
+    box-shadow: 0 0 10px var(--accent-color);
+}
+
+@keyframes particle-fade {
+    0% {
+        opacity: 1;
+        transform: translate(0, 0) scale(1.5);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(var(--tx), var(--ty)) scale(0);
+    }
+}
+
+.task.exploding {
+    animation: task-explode 0.6s ease-out forwards;
+}
+
+@keyframes task-explode {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(0.8);
+        opacity: 0;
+    }
 } 

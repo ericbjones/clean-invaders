@@ -287,13 +287,16 @@ function updateTaskVisibility() {
         task.style.display = (!isCompleted || showCompleted) && matchesFilter ? '' : 'none';
     });
 
-    // Update room visibility based on task completion and filters
+    // Update room visibility based on task completion, filters, and hidden status
     document.querySelectorAll('.room-card').forEach(room => {
         const tasks = room.querySelectorAll('.task');
         const hasVisibleTasks = Array.from(tasks).some(task => task.style.display !== 'none');
+        const isHidden = room.classList.contains('is-hidden');
         
-        // Only show room if it has visible tasks
-        room.style.display = hasVisibleTasks ? '' : 'none';
+        // Show room if:
+        // 1. It has visible tasks AND
+        // 2. Either showHidden is true OR the room is not hidden
+        room.style.display = hasVisibleTasks && (showHidden || !isHidden) ? '' : 'none';
     });
 }
 
@@ -452,13 +455,23 @@ function resetHidden() {
             'Content-Type': 'application/json',
         }
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            loadProgress();
-            const menu = document.getElementById('showHiddenMenu');
-            menu.style.display = 'none';
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
         }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Hidden rooms reset successful:', data);
+        // Remove is-hidden class from all rooms
+        document.querySelectorAll('.room-card.is-hidden').forEach(room => {
+            room.classList.remove('is-hidden');
+        });
+        // Update visibility to show newly unhidden rooms
+        updateTaskVisibility();
+    })
+    .catch(error => {
+        console.error('Error resetting hidden rooms:', error);
     });
 }
 

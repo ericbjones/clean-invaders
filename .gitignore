@@ -4,3 +4,20 @@ flask-output.log
 git_monitor.log
 gitmonitor-error.log
 gitmonitor-output.log
+
+# SQLite database
+cleaning.db
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment
+.env
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/

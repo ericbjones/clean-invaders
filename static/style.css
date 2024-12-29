@@ -41,6 +41,15 @@ header {
     border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.3),
                 0 0 40px var(--glow-color);
+    position: relative;
+}
+
+.header-right {
+    position: absolute;
+    right: 20px;
+    top: 70px;
+    display: flex;
+    gap: 8px;
 }
 
 .view-controls {
@@ -419,16 +428,16 @@ button.active {
         gap: 15px;
     }
 
-    .view-controls button {
-        min-height: 44px;
-        margin-bottom: 5px;
-        width: 100%;
-        margin-right: 0;
+    .view-controls {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 8px;
     }
 
-    .view-controls {
-        display: flex;
-        flex-direction: column;
+    .view-controls button {
+        min-height: 44px;
+        width: 100%;
+        margin: 0;
     }
 
     .assignment-filters {
@@ -436,12 +445,33 @@ button.active {
     }
 
     .color-filters {
-        flex-direction: column;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 8px;
     }
 
     .color-filter {
         width: 100%;
         justify-content: flex-start;
+        min-height: 44px;
+        margin: 0;
+    }
+
+    /* Make all button groups use grid */
+    .header-buttons,
+    .action-buttons,
+    .filter-buttons {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 8px;
+    }
+
+    /* Reset margins for all buttons in mobile */
+    button,
+    .btn-back,
+    .btn-hide {
+        margin: 0;
+        width: 100%;
         min-height: 44px;
     }
 
@@ -461,6 +491,14 @@ button.active {
 
     .task-header i:hover::after {
         display: none;
+    }
+
+    .header-right {
+        position: static;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 8px;
+        margin-top: 8px;
     }
 }
 

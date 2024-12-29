@@ -438,6 +438,25 @@ function resetRoom(floor, room, fromBroadcast = false) {
         .catch(error => {
             console.error('Error resetting room:', error);
         });
+    } else {
+        // If this was triggered by a broadcast, reset the room locally
+        document.querySelectorAll(`.task[data-floor="${floor}"][data-room="${room}"]`).forEach(task => {
+            // Remove animation classes
+            task.classList.remove('exploding', 'task-complete-shake');
+            // Reset display style
+            task.style.display = '';
+            // Reset progress bar
+            const progressBar = task.querySelector('.progress');
+            if (progressBar) {
+                progressBar.style.width = '0%';
+            }
+        });
+        
+        // Then load progress to update any other states
+        loadProgress().then(() => {
+            // Update task visibility to handle filters
+            updateTaskVisibility();
+        });
     }
 }
 

@@ -11,7 +11,7 @@
 <body>
     <div class="room-view">
         <div class="tasks-container">
-            <a href="{{ url_for('dashboard') }}" class="btn-back">
+            <a href="/" class="back-button" onclick="broadcastDashboardNavigation(); return true;">
                 <i class="fas fa-arrow-left"></i>
                 Back to Dashboard
             </a>
@@ -88,6 +88,17 @@
     <!-- Container for particle effects -->
     <div id="particles-container" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999;"></div>
 
+    <script>
+        function broadcastDashboardNavigation() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({
+                    action: 'navigateToRoom',
+                    floor: 'dashboard',
+                    room: 'dashboard'
+                }));
+            }
+        }
+    </script>
     <script src="{{ url_for('static', filename='dashboard.js') }}"></script>
 </body>
 </html> 

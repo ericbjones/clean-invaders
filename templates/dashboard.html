@@ -86,10 +86,10 @@
                 <div class="rooms">
                     {% for room_name, room_data in rooms.items() %}
                     <div class="room-card">
-                        <a href="{{ url_for('room_view', floor=floor, room=room_name) }}" class="room-header">
+                        <a href="/room/{{ floor }}/{{ room }}" class="room-header" onclick="broadcastRoomNavigation('{{ floor }}', '{{ room }}'); return true;">
                             <h3>
-                                <i class="fas fa-{{ room_data.icon }}"></i>
-                                {{ room_name }}
+                                <i class="fas fa-door-open"></i>
+                                {{ room }}
                             </h3>
                         </a>
                         

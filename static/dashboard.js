@@ -67,6 +67,11 @@ function handleWebSocketMessage(data) {
             }
             break;
             
+        case 'navigateToRoom':
+            // Handle room navigation from other clients
+            window.location.href = `/room/${data.floor}/${data.room}`;
+            break;
+            
         case 'setView':
             setView(data.view, true);  // true means don't broadcast
             break;
@@ -1205,4 +1210,9 @@ function createParticlesAtPosition(x, y, isRoom = false) {
             }
         });
     }
+}
+
+// Add function to broadcast room navigation
+function broadcastRoomNavigation(floor, room) {
+    broadcastAction('navigateToRoom', { floor, room });
 } 

@@ -121,6 +121,10 @@ button.active {
     background: rgba(255, 255, 255, 0.03);
     border-radius: 4px;
     transition: all 0.2s ease;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
 }
 
 .task:hover {
@@ -216,6 +220,10 @@ button.active {
     justify-content: space-between;
     border: 1px solid rgba(255, 255, 255, 0.1);
     transition: all 0.3s ease;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
 }
 
 .room-view .task.large:hover {
@@ -265,53 +273,6 @@ button.active {
     opacity: 1;
     border-color: var(--accent-color);
     box-shadow: 0 0 10px var(--glow-color);
-}
-
-.context-menu {
-    position: fixed;
-    background: var(--card-bg);
-    backdrop-filter: blur(10px);
-    border-radius: 4px;
-    padding: 10px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-    z-index: 1000;
-    display: none;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.context-menu.active {
-    display: block;
-}
-
-.label-editor input {
-    background: rgba(0, 0, 0, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: var(--text-color);
-    padding: 5px 8px;
-    border-radius: 4px;
-}
-
-.label-editor input:focus {
-    border-color: var(--accent-color);
-    box-shadow: 0 0 10px var(--glow-color);
-    outline: none;
-}
-
-@keyframes twinkle {
-    0% { opacity: 0.4; }
-    50% { opacity: 0.8; }
-    100% { opacity: 0.4; }
-}
-
-.dashboard-title {
-    cursor: context-menu;
-}
-
-.dashboard-title:hover {
-    text-decoration: underline;
-    text-decoration-style: dotted;
-    text-decoration-thickness: 2px;
-    text-underline-offset: 4px;
 }
 
 /* Assignment colors with glow effects */
@@ -447,34 +408,79 @@ button.active {
     box-shadow: 0 0 20px var(--glow-color);
 }
 
-.room-view.room-complete-shake {
-    animation: room-complete-shake 0.8s ease-in-out;
+/* Mobile optimizations */
+@media (max-width: 768px) {
+    .dashboard {
+        padding: 10px;
+    }
+
+    .rooms {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+
+    .view-controls button {
+        min-height: 44px;
+        margin-bottom: 5px;
+        width: 100%;
+        margin-right: 0;
+    }
+
+    .view-controls {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .assignment-filters {
+        padding: 10px;
+    }
+
+    .color-filters {
+        flex-direction: column;
+    }
+
+    .color-filter {
+        width: 100%;
+        justify-content: flex-start;
+        min-height: 44px;
+    }
+
+    .room-view .tasks {
+        grid-template-columns: 1fr;
+        gap: 15px;
+        padding: 10px;
+    }
+
+    .room-view .tasks-container {
+        padding: 10px;
+    }
+
+    header {
+        padding: 15px;
+    }
+
+    .task-header i:hover::after {
+        display: none;
+    }
 }
 
-.room-view .task.large {
-    position: relative;
-    transform-origin: center;
+/* Touch-friendly improvements */
+@media (hover: none) {
+    button,
+    .btn-hide,
+    .color-filter {
+        min-height: 44px;
+    }
+
+    .task {
+        min-height: 44px;
+        padding: 12px;
+    }
 }
 
-.room-view .task.large.task-complete-shake {
-    animation: task-complete-shake 0.2s ease-in-out 3;
-}
-
-.task[style*="width: 100%"] {
-    opacity: 0.7;
-    background: rgba(0, 255, 0, 0.1);
-}
-
-.task[style*="width: 100%"] .progress {
-    background: linear-gradient(to right, #4CAF50, #45a049);
-}
-
-#show-completed-btn {
-    margin-left: 10px;
-}
-
+/* Particle effects */
 .particle {
-    position: absolute;
+    position: fixed;
     pointer-events: none;
     background: var(--accent-color);
     border-radius: 50%;
@@ -482,6 +488,7 @@ button.active {
     height: 8px;
     animation: particle-fade 0.8s ease-out forwards;
     box-shadow: 0 0 10px var(--accent-color);
+    z-index: 9999;
 }
 
 @keyframes particle-fade {
@@ -497,6 +504,8 @@ button.active {
 
 .task.exploding {
     animation: task-explode 0.6s ease-out forwards;
+    position: relative;
+    z-index: 1;
 }
 
 @keyframes task-explode {
@@ -504,8 +513,86 @@ button.active {
         transform: scale(1);
         opacity: 1;
     }
+    50% {
+        transform: scale(1.1);
+        opacity: 0.8;
+    }
     100% {
         transform: scale(0.8);
         opacity: 0;
+    }
+}
+
+/* Task completion styles */
+.task[style*="width: 100%"] {
+    opacity: 0.7;
+    background: rgba(0, 255, 0, 0.1);
+}
+
+.task[style*="width: 100%"] .progress {
+    background: linear-gradient(to right, #4CAF50, #45a049);
+}
+
+/* Room completion effects */
+.room-card.exploding {
+    animation: room-explode 0.8s ease-out forwards;
+    position: relative;
+    z-index: 1;
+}
+
+@keyframes room-explode {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.05);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(0);
+        opacity: 0;
+    }
+}
+
+/* Make particles more prominent for room completion */
+.particle.room-particle {
+    width: 12px;
+    height: 12px;
+    box-shadow: 0 0 20px var(--accent-color);
+    animation: room-particle-fade 1.2s ease-out forwards;
+}
+
+@keyframes room-particle-fade {
+    0% {
+        opacity: 1;
+        transform: translate(0, 0) scale(2);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(var(--tx), var(--ty)) scale(0);
+    }
+}
+
+/* Room view explosion effect */
+.room-view.room-exploding {
+    animation: room-view-explode 1.5s ease-out forwards;
+}
+
+@keyframes room-view-explode {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+        filter: brightness(1);
+    }
+    30% {
+        transform: scale(1.1);
+        opacity: 1;
+        filter: brightness(1.5);
+    }
+    100% {
+        transform: scale(2);
+        opacity: 0;
+        filter: brightness(2);
     }
 } 

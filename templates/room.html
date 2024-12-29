@@ -3,28 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ room_name }} - Cleaning Dashboard</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 640 512'><path fill='%234CAF50' d='M627.6 57.3c-22.6-22.6-53.3-35.3-85.3-35.3-32 0-62.7 12.7-85.3 35.3L389.3 125c-5.7 5.7-10.7 12.1-14.9 18.9l-7.1-7.1c-25-25-65.5-25-90.5 0L166.5 247.1c-25 25-25 65.5 0 90.5l7.1 7.1c-6.8 4.2-13.2 9.2-18.9 14.9l-67.7 67.7c-22.6 22.6-35.3 53.3-35.3 85.3s12.7 62.7 35.3 85.3c22.6 22.6 53.3 35.3 85.3 35.3 32 0 62.7-12.7 85.3-35.3l67.7-67.7c5.7-5.7 10.7-12.1 14.9-18.9l7.1 7.1c25 25 65.5 25 90.5 0L548.9 408c25-25 25-65.5 0-90.5l-7.1-7.1c6.8-4.2 13.2-9.2 18.9-14.9l67.7-67.7c22.6-22.6 35.3-53.3 35.3-85.3s-12.7-62.7-35.3-85.3z'/></svg>"/>
+    <title>{{ room_name }} - Cleaning Tasks</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 576 512'><path fill='%234CAF50' d='M566.6 54.6c-12.5-12.5-32.8-12.5-45.3 0l-192 192c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3zM237.3 168c25.3-23.1 23.1-25.3 0 0l-89.4 89.4c-6.2 6.2-16.4 6.2-22.6 0l-89.4-89.4c-23.1-25.3-25.3-23.1 0 0l89.4-89.4c6.2-6.2 16.4-6.2 22.6 0l89.4 89.4z'/></svg>"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <div class="dashboard room-view">
-        <header>
-            <div class="back-button">
-                <a href="{{ url_for('dashboard') }}" class="btn-back">
-                    <i class="fas fa-arrow-left"></i> Back to Dashboard
-                </a>
-            </div>
+    <div class="room-view">
+        <div class="tasks-container">
+            <a href="{{ url_for('dashboard') }}" class="btn-back">
+                <i class="fas fa-arrow-left"></i>
+                Back to Dashboard
+            </a>
+            
             <h1>
                 <i class="fas fa-{{ room_data.icon }}"></i>
                 {{ room_name }}
             </h1>
-            <div class="room-progress">
-                <div class="progress-bar">
-                    <div class="progress" id="{{ floor }}-{{ room_name }}-progress"></div>
-                </div>
+
+            <div class="view-controls">
+                <button onclick="resetRoom('{{ floor }}', '{{ room_name }}')" class="btn-reset">
+                    <i class="fas fa-redo-alt"></i> Reset Room
+                </button>
+                <button onclick="toggleShowCompleted()" id="show-completed-btn">
+                    <i class="fas fa-check"></i> Show Completed
+                </button>
             </div>
+
             <div class="assignment-filters">
                 <span class="filter-label">Filter by Assignment:</span>
                 <div class="color-filters">
@@ -62,15 +67,7 @@
                     </button>
                 </div>
             </div>
-            <button onclick="resetRoom('{{ floor }}', '{{ room_name }}')" class="btn-reset">
-                <i class="fas fa-redo-alt"></i> Reset Room
-            </button>
-            <button onclick="toggleShowCompleted()" id="show-completed-btn">
-                <i class="fas fa-check"></i> Show Completed
-            </button>
-        </header>
-        
-        <div class="tasks-container">
+
             <div class="tasks">
                 {% for task in room_data.tasks %}
                 <div class="task large" data-floor="{{ floor }}" data-room="{{ room_name }}" data-task="{{ task.name }}">
@@ -87,17 +84,10 @@
             </div>
         </div>
     </div>
-    
-    <div class="context-menu" id="colorLabelMenu">
-        <div class="label-editor">
-            <input type="text" id="labelInput" placeholder="Enter label">
-            <div class="label-editor-buttons">
-                <button class="apply" onclick="applyLabel()">Apply</button>
-                <button class="reset" onclick="resetLabel()">Reset</button>
-            </div>
-        </div>
-    </div>
-    
+
+    <!-- Container for particle effects -->
+    <div id="particles-container" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999;"></div>
+
     <script src="{{ url_for('static', filename='dashboard.js') }}"></script>
 </body>
 </html> 

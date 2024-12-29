@@ -87,35 +87,34 @@ function setView(view) {
     });
 }
 
-function updateProgress(floor, room, task, progress) {
-    return fetch('/api/update_progress', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            floor: floor,
-            room: room,
-            task: task,
-            progress: progress
-        })
-    })
-    .then(response => {
-        if (!response.ok) throw new Error('Network response was not ok');
-        return response.json();
-    })
-    .then(data => {
-        if (data.success) {
-            // Update the progress bar immediately
-            const progressBar = document.getElementById(`${floor}-${room}-${task}-progress`);
+async function updateProgress(floor, room, task, progress) {
+    try {
+        const response = await fetch('/api/update_progress', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ floor, room, task, progress })
+        });
+        
+        if (response.ok) {
+            // Find the task's progress bar using the task element itself
+            const taskElement = document.querySelector(`.task[data-floor="${floor}"][data-room="${room}"][data-task="${task}"]`);
+            const progressBar = taskElement?.querySelector('.progress');
+            
             if (progressBar) {
                 progressBar.style.width = `${progress}%`;
+                
+                if (progress === 100) {
+                    handleTaskCompletion(taskElement, floor, room);
+                } else {
+                    playProgressSound();
+                }
             }
-            // Also update room and floor progress
-            updateRoomAndFloorProgress(floor, room);
         }
-        return data;
-    });
+    } catch (error) {
+        console.error('Error updating progress:', error);
+    }
 }
 
 function updateRoomAndFloorProgress(floor, room) {
@@ -273,53 +272,28 @@ function updateAssignment(floor, room, task, assignment) {
 }
 
 function updateTaskVisibility() {
-    const tasks = document.querySelectorAll('.task');
-    const roomsWithMatchingTasks = new Set();
-    
-    tasks.forEach(task => {
+    document.querySelectorAll('.task').forEach(task => {
+        const progressBar = task.querySelector('.progress');
+        const isCompleted = progressBar && progressBar.style.width === '100%';
         const taskIcon = task.querySelector('.task-header i');
-        const currentClass = Array.from(taskIcon.classList)
+        const currentClass = Array.from(taskIcon?.classList || [])
             .find(className => className.startsWith('assigned-'));
         const currentAssignment = currentClass ? currentClass.split('-')[1] : '0';
-        const progressBar = task.querySelector('.progress');
-        const isCompleted = parseInt(progressBar.style.width) === 100;
         
-        // Check if task should be visible based on filters and completion
-        let isVisible = activeFilters.has('all') || activeFilters.has(currentAssignment);
-        if (isCompleted && !showCompleted) {
-            isVisible = false;
-        }
+        // Check both completion and filter status
+        const matchesFilter = activeFilters.has('all') || activeFilters.has(currentAssignment);
         
-        if (isVisible) {
-            task.style.display = '';
-            // Keep track of rooms that have matching tasks
-            const floor = task.dataset.floor;
-            const room = task.dataset.room;
-            roomsWithMatchingTasks.add(`${floor}-${room}`);
-        } else {
-            task.style.display = 'none';
-        }
+        // Hide instead of remove, so we can show again when filter changes
+        task.style.display = (!isCompleted || showCompleted) && matchesFilter ? '' : 'none';
     });
 
-    // Update room visibility based on whether they have any matching tasks
-    const roomCards = document.querySelectorAll('.room-card');
-    roomCards.forEach(card => {
-        const floor = card.closest('.floor').dataset.floor;
-        const room = card.querySelector('h3').textContent.trim();
-        const roomKey = `${floor}-${room}`;
+    // Update room visibility based on task completion and filters
+    document.querySelectorAll('.room-card').forEach(room => {
+        const tasks = room.querySelectorAll('.task');
+        const hasVisibleTasks = Array.from(tasks).some(task => task.style.display !== 'none');
         
-        // First check if room should be hidden by filter
-        if (!activeFilters.has('all') && !roomsWithMatchingTasks.has(roomKey)) {
-            card.style.display = 'none';
-            return;
-        }
-        
-        // Then check if room is hidden (only if it passed the filter check)
-        if (card.classList.contains('is-hidden') && !showHidden) {
-            card.style.display = 'none';
-        } else {
-            card.style.display = '';
-        }
+        // Only show room if it has visible tasks
+        room.style.display = hasVisibleTasks ? '' : 'none';
     });
 }
 
@@ -589,41 +563,74 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize title handling
     initializeTitleHandling();
     
+    // Load showCompleted state from localStorage, default to false if not set
+    const savedShowCompleted = localStorage.getItem('showCompleted');
+    showCompleted = savedShowCompleted === 'true';
+    const btn = document.getElementById('show-completed-btn');
+    if (btn) {
+        btn.innerHTML = `<i class="fas fa-check"></i> ${showCompleted ? 'Hide Completed' : 'Show Completed'}`;
+    }
+    
     // First load the progress to ensure all tasks are properly initialized
     loadProgress().then(() => {
         // Then load and apply filters
         loadFilters();
         
-        // Initialize task click handlers
+        // Initialize task handlers
         initializeTaskHandlers();
+        
+        // Update task visibility based on showCompleted state
+        updateTaskVisibility();
     });
 });
 
 function initializeTaskHandlers() {
     // Initialize task handlers
     document.querySelectorAll('.task').forEach(task => {
-        // Remove any existing event listeners
-        const newTask = task.cloneNode(true);
-        task.parentNode.replaceChild(newTask, task);
-        task = newTask;
+        // Progress click handler
+        task.addEventListener('click', (e) => {
+            // Don't handle progress clicks if clicking the icon
+            if (e.target.closest('.task-header i')) return;
+            
+            // Only prevent clicks during the completion animation
+            if (task.classList.contains('task-complete-shake') || 
+                task.classList.contains('exploding')) {
+                return;
+            }
 
+            const progressBar = task.querySelector('.progress');
+            if (!progressBar) return;
+
+            const currentWidth = parseInt(progressBar.style.width) || 0;
+            const newProgress = currentWidth + 20;
+            
+            // Get floor and room info from data attributes
+            const floor = task.dataset.floor;
+            const room = task.dataset.room;
+            const taskId = task.dataset.task;
+
+            // Update progress
+            updateProgress(floor, room, taskId, newProgress);
+        });
+
+        // Assignment icon click handler
         const taskIcon = task.querySelector('.task-header i');
-        
-        // Assignment click handler
         if (taskIcon) {
             taskIcon.addEventListener('click', (e) => {
                 e.stopPropagation();
-                const floor = task.dataset.floor;
-                const room = task.dataset.room;
-                const taskName = task.dataset.task;
                 
-                // Get current assignment from the class name instead of data attribute
+                // Get current assignment from the class name
                 const currentClass = Array.from(taskIcon.classList)
                     .find(className => className.startsWith('assigned-'));
                 const currentAssignment = currentClass ? parseInt(currentClass.split('-')[1]) : 0;
                 const newAssignment = (currentAssignment + 1) % 7;
                 
-                updateAssignment(floor, room, taskName, newAssignment)
+                // Get task info from data attributes
+                const floor = task.dataset.floor;
+                const room = task.dataset.room;
+                const taskId = task.dataset.task;
+                
+                updateAssignment(floor, room, taskId, newAssignment)
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
@@ -642,42 +649,6 @@ function initializeTaskHandlers() {
                     });
             });
         }
-        
-        // Progress click handler
-        task.addEventListener('click', (e) => {
-            if (e.target.closest('.task-header i')) return;
-            e.preventDefault();
-            const floor = task.dataset.floor;
-            const room = task.dataset.room;
-            const taskName = task.dataset.task;
-            const progressBar = document.getElementById(`${floor}-${room}-${taskName}-progress`);
-            
-            if (!progressBar) {
-                console.error('Progress bar not found:', `${floor}-${room}-${taskName}-progress`);
-                return;
-            }
-            
-            const currentProgress = parseInt(progressBar.style.width) || 0;
-            const newProgress = (currentProgress + 25) % 125;
-            
-            // Play appropriate sound(s) and handle completion
-            if (newProgress === 100) {
-                handleTaskCompletion(task, floor, room);
-            } else if (newProgress !== 0) {
-                playProgressSound();
-            }
-            
-            updateProgress(floor, room, taskName, newProgress)
-                .then(() => {
-                    // Update progress bar immediately
-                    progressBar.style.width = `${newProgress}%`;
-                    // Update room progress
-                    updateRoomAndFloorProgress(floor, room);
-                })
-                .catch(error => {
-                    console.error('Error updating progress:', error);
-                });
-        });
     });
 
     // Initialize color filters
@@ -762,131 +733,274 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Update the color filter click handler
 function initializeColorFilters() {
-    const colorFilters = document.querySelectorAll('.color-filter');
-    if (colorFilters.length > 0) {
-        colorFilters.forEach(filter => {
-            filter.addEventListener('click', () => {
-                const assignment = filter.dataset.assignment;
+    document.querySelectorAll('.color-filter').forEach(filter => {
+        filter.addEventListener('click', () => {
+            const assignment = filter.dataset.assignment;
+            
+            // Toggle active state
+            if (assignment === 'all') {
+                // If clicking 'All', make it the only active filter
+                activeFilters.clear();
+                activeFilters.add('all');
+                document.querySelectorAll('.color-filter').forEach(f => {
+                    f.classList.toggle('active', f === filter);
+                });
+            } else {
+                // Remove 'all' filter when clicking specific color
+                activeFilters.delete('all');
+                document.querySelector('.color-filter[data-assignment="all"]')
+                    ?.classList.remove('active');
                 
-                if (assignment === 'all') {
-                    if (activeFilters.has('all')) {
-                        activeFilters.clear();
-                        document.querySelectorAll('.color-filter').forEach(f => f.classList.remove('active'));
-                    } else {
-                        activeFilters.clear();
-                        activeFilters.add('all');
-                        document.querySelectorAll('.color-filter').forEach(f => f.classList.remove('active'));
-                        filter.classList.add('active');
-                    }
+                // Toggle this filter
+                filter.classList.toggle('active');
+                if (filter.classList.contains('active')) {
+                    activeFilters.add(assignment);
                 } else {
-                    activeFilters.delete('all');
-                    document.querySelector('.color-filter[data-assignment="all"]').classList.remove('active');
-                    
-                    if (activeFilters.has(assignment)) {
-                        activeFilters.delete(assignment);
-                        filter.classList.remove('active');
-                        
-                        if (activeFilters.size === 0) {
-                            activeFilters.add('all');
-                            document.querySelector('.color-filter[data-assignment="all"]').classList.add('active');
-                        }
-                    } else {
-                        activeFilters.add(assignment);
-                        filter.classList.add('active');
+                    activeFilters.delete(assignment);
+                    // If no filters active, activate 'all'
+                    if (activeFilters.size === 0) {
+                        activeFilters.add('all');
+                        document.querySelector('.color-filter[data-assignment="all"]')
+                            ?.classList.add('active');
                     }
                 }
-                
-                saveFilters();  // Save filter state
-                updateTaskVisibility();
-            });
-
-            // Add context menu
-            filter.addEventListener('contextmenu', (e) => showContextMenu(e, filter));
+            }
+            
+            // Update visibility
+            updateTaskVisibility();
         });
-    }
+    });
 }
 
 function toggleShowCompleted() {
     showCompleted = !showCompleted;
+    // Save to localStorage immediately when toggled
+    localStorage.setItem('showCompleted', showCompleted);
+    
     const btn = document.getElementById('show-completed-btn');
     btn.innerHTML = `<i class="fas fa-check"></i> ${showCompleted ? 'Hide Completed' : 'Show Completed'}`;
     updateTaskVisibility();
 }
 
-function createParticles(task) {
-    const rect = task.getBoundingClientRect();
-    const numParticles = 25;  // Increased number of particles
+function createParticles(element, isRoom = false) {
+    if (!element || !element.isConnected) return;
     
-    for (let i = 0; i < numParticles; i++) {
+    // Get or create particles container
+    let container = document.getElementById('particles-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'particles-container';
+        container.style.position = 'fixed';
+        container.style.top = '0';
+        container.style.left = '0';
+        container.style.width = '100%';
+        container.style.height = '100%';
+        container.style.pointerEvents = 'none';
+        container.style.zIndex = '9999';
+        document.body.appendChild(container);
+    }
+    
+    const rect = element.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    
+    const particleCount = isRoom ? 30 : 15;
+    
+    for (let i = 0; i < particleCount; i++) {
         const particle = document.createElement('div');
-        particle.className = 'particle';
+        particle.className = `particle ${isRoom ? 'room-particle' : ''}`;
         
-        // Random angle and increased distance
-        const angle = (Math.random() * Math.PI * 2);
-        const distance = 100 + Math.random() * 200;  // Increased distance range
-        
-        // Calculate final position
+        // Calculate random end position
+        const angle = (Math.random() * 360) * (Math.PI / 180);
+        const distance = isRoom ? Math.random() * 300 + 100 : Math.random() * 150 + 50;
         const tx = Math.cos(angle) * distance;
         const ty = Math.sin(angle) * distance;
         
-        // Set particle position and animation
-        particle.style.left = (rect.left + rect.width / 2) + 'px';
-        particle.style.top = (rect.top + rect.height / 2) + 'px';
+        // Set initial position
+        particle.style.left = `${centerX}px`;
+        particle.style.top = `${centerY}px`;
         particle.style.setProperty('--tx', `${tx}px`);
         particle.style.setProperty('--ty', `${ty}px`);
         
-        document.body.appendChild(particle);
+        container.appendChild(particle);
         
-        // Remove particle after animation (increased to match new animation duration)
-        setTimeout(() => particle.remove(), 800);
+        // Clean up particle after animation
+        particle.addEventListener('animationend', () => {
+            if (container.contains(particle)) {
+                container.removeChild(particle);
+            }
+        });
+    }
+}
+
+function checkRoomCompletion(floor, roomName) {
+    const roomCard = document.querySelector(`.room-card[data-floor="${floor}"][data-room="${roomName}"]`);
+    if (!roomCard) return;
+
+    const tasks = roomCard.querySelectorAll('.task');
+    const allComplete = Array.from(tasks).every(task => {
+        const progressBar = task.querySelector('.progress');
+        return progressBar && progressBar.style.width === '100%';
+    });
+
+    if (allComplete && !roomCard.classList.contains('exploding')) {
+        playRoomCompleteSound();
+        createParticles(roomCard, true);
+        roomCard.classList.add('exploding');
+        
+        roomCard.addEventListener('animationend', () => {
+            if (!showCompleted && roomCard.parentElement) {
+                roomCard.parentElement.removeChild(roomCard);
+            }
+        });
     }
 }
 
 // Update the task completion handler
 function handleTaskCompletion(task, floor, room) {
-    // Add shake animation to task
-    task.classList.add('task-complete-shake');
+    const isDashboardView = !document.querySelector('.room-view');
     
-    // Remove animation class and start particle effect
+    // Add shake animation first
+    task.classList.add('task-complete-shake');
+    playProgressSound();
+
+    // After shake animation (200ms)
     setTimeout(() => {
         task.classList.remove('task-complete-shake');
-        task.classList.add('exploding');
-        createParticles(task);
-        
-        // Hide task after explosion
-        setTimeout(() => {
-            task.classList.remove('exploding');
-            if (!showCompleted) {
-                task.style.display = 'none';
-                // Check if room should be hidden (no visible tasks)
-                const visibleTasks = Array.from(task.closest('.tasks').querySelectorAll('.task'))
-                    .filter(t => t.style.display !== 'none');
-                if (visibleTasks.length === 0) {
-                    const roomCard = task.closest('.room-card');
-                    if (roomCard) {
-                        roomCard.style.display = 'none';
+        playCompleteSound();
+
+        // Create particles and start explosion
+        if (isDashboardView) {
+            if (task.isConnected) {
+                createParticles(task);
+                task.classList.add('exploding');
+                
+                // Check room completion immediately
+                const roomCard = task.closest('.room-card');
+                if (roomCard) {
+                    const tasks = roomCard.querySelectorAll('.task');
+                    const allComplete = Array.from(tasks).every(t => {
+                        const progressBar = t.querySelector('.progress');
+                        return progressBar && progressBar.style.width === '100%';
+                    });
+
+                    if (allComplete && !roomCard.classList.contains('exploding')) {
+                        setTimeout(() => {
+                            playRoomCompleteSound();
+                            createParticles(roomCard, true);
+                            
+                            // Wait for particles to mostly finish (800ms) before fading room
+                            setTimeout(() => {
+                                roomCard.classList.add('exploding');
+                                
+                                roomCard.addEventListener('animationend', () => {
+                                    if (!showCompleted && roomCard.parentElement) {
+                                        roomCard.parentElement.removeChild(roomCard);
+                                    }
+                                });
+                            }, 800);
+                        }, 300);
+                    } else if (!showCompleted) {
+                        // Remove task after explosion if not showing completed
+                        setTimeout(() => {
+                            if (task.parentElement) {
+                                task.parentElement.removeChild(task);
+                            }
+                        }, 600);
                     }
                 }
             }
-        }, 600);
-    }, 600);
-    
-    // Play task completion sounds
-    playProgressSound();
-    setTimeout(() => {
-        playCompleteSound();
-        // Check if room is complete after a short delay
-        setTimeout(() => {
-            if (isRoomComplete(floor, room)) {
-                playRoomCompleteSound();
-                // Add shake animation to room card or container
-                const roomCard = task.closest('.room-card') || task.closest('.room-view');
-                if (roomCard) {
-                    roomCard.classList.add('room-complete-shake');
-                    // Remove animation class after it's done
-                    setTimeout(() => roomCard.classList.remove('room-complete-shake'), 800);
-                }
+        } else {
+            // Room view handling
+            createParticles(task);
+            task.classList.add('exploding');
+            
+            // Check if all tasks in room are complete
+            const roomView = task.closest('.room-view');
+            const tasks = roomView.querySelectorAll('.task');
+            const allComplete = Array.from(tasks).every(t => {
+                const progressBar = t.querySelector('.progress');
+                return progressBar && progressBar.style.width === '100%';
+            });
+
+            if (allComplete) {
+                // Wait for task explosion to finish
+                setTimeout(() => {
+                    // Play the huge success sound
+                    playRoomCompleteSound();
+                    
+                    // Create explosion particles from each task
+                    tasks.forEach(t => createParticles(t, true));
+                    
+                    // Create additional particles from corners and center
+                    const corners = [
+                        {x: 0, y: 0}, {x: window.innerWidth, y: 0},
+                        {x: 0, y: window.innerHeight}, {x: window.innerWidth, y: window.innerHeight},
+                        {x: window.innerWidth/2, y: window.innerHeight/2}
+                    ];
+                    corners.forEach(pos => createParticlesAtPosition(pos.x, pos.y, true));
+                    
+                    // Add explosion class to room view
+                    roomView.classList.add('room-exploding');
+                    
+                    // Redirect to dashboard after animation
+                    setTimeout(() => {
+                        // Store showCompleted state in localStorage before redirect
+                        localStorage.setItem('showCompleted', showCompleted);
+                        window.location.href = '/';
+                    }, 1500);
+                }, 600);
+            } else if (!showCompleted) {
+                // Remove task after explosion if not showing completed
+                setTimeout(() => {
+                    if (task.parentElement) {
+                        task.parentElement.removeChild(task);
+                    }
+                }, 600);
             }
-        }, 300);
+        }
     }, 200);
+}
+
+// Add new function to create particles at specific position
+function createParticlesAtPosition(x, y, isRoom = false) {
+    let container = document.getElementById('particles-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'particles-container';
+        container.style.position = 'fixed';
+        container.style.top = '0';
+        container.style.left = '0';
+        container.style.width = '100%';
+        container.style.height = '100%';
+        container.style.pointerEvents = 'none';
+        container.style.zIndex = '9999';
+        document.body.appendChild(container);
+    }
+    
+    const particleCount = isRoom ? 30 : 15;
+    
+    for (let i = 0; i < particleCount; i++) {
+        const particle = document.createElement('div');
+        particle.className = `particle ${isRoom ? 'room-particle' : ''}`;
+        
+        // Calculate random end position
+        const angle = (Math.random() * 360) * (Math.PI / 180);
+        const distance = isRoom ? Math.random() * 400 + 200 : Math.random() * 150 + 50;
+        const tx = Math.cos(angle) * distance;
+        const ty = Math.sin(angle) * distance;
+        
+        particle.style.left = `${x}px`;
+        particle.style.top = `${y}px`;
+        particle.style.setProperty('--tx', `${tx}px`);
+        particle.style.setProperty('--ty', `${ty}px`);
+        
+        container.appendChild(particle);
+        
+        particle.addEventListener('animationend', () => {
+            if (container.contains(particle)) {
+                container.removeChild(particle);
+            }
+        });
+    }
 } 

@@ -88,11 +88,6 @@
                                 <i class="fas fa-{{ room_data.icon }}"></i>
                                 {{ room_name }}
                             </h3>
-                            <div class="room-progress">
-                                <div class="progress-bar">
-                                    <div class="progress" id="{{ floor }}-{{ room_name }}-progress"></div>
-                                </div>
-                            </div>
                         </a>
                         
                         <div class="tasks">
@@ -126,11 +121,11 @@
         </div>
     </div>
     
-    <div class="context-menu" id="showHiddenMenu">
+    <div class="context-menu" id="showHiddenMenu" style="display: none;">
         <button onclick="resetHidden()">Reset Hidden Rooms</button>
     </div>
     
-    <div class="context-menu" id="colorLabelMenu">
+    <div class="context-menu" id="colorLabelMenu" style="display: none;">
         <div class="label-editor">
             <input type="text" id="labelInput" placeholder="Enter label">
             <div class="label-editor-buttons">

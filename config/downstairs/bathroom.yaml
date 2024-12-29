@@ -15,3 +15,5 @@ tasks:
     icon: sink
   - name: Clean Bathtub
     icon: bathtub
+  - name: Pick Up Trash
+    icon: trash

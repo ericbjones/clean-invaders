@@ -1,12 +1,12 @@
 # FontAwesome icons reference: https://fontawesome.com/v6/search?o=r&m=free
 icon: kitchen-set
 tasks:
-  - name: Clean Counters
+  - name: Wipe Counters
     icon: sink
   - name: Sweep Floor
     icon: broom
   - name: Mop Floor
-    icon: paintrush
+    icon: paintbrush
   - name: Empty Trash
     icon: trash
   - name: Load Dishwasher
@@ -16,8 +16,15 @@ tasks:
   - name: Clean Stovetop
     icon: fire
   - name: Clean Microwave
-    icon: microwave
+    icon: tv
   - name: Organize Fridge
     icon: temperature-low 
   - name: Arrange Bar Stools
     icon: chair
+  - name: Pick Up Trash on Counters
+    icon: trash
+  - name: Pick Up Trash on Floor
+    icon: trash
+  - name: Gather Dishes
+    icon: mug-hot
+

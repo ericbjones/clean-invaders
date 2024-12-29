@@ -11,3 +11,5 @@ tasks:
     icon: paintbrush
   - name: Arrange Chairs
     icon: chair 
+  - name: Pick Up Trash
+    icon: trash

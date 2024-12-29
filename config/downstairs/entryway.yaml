@@ -11,3 +11,9 @@ tasks:
     icon: shoe-prints
   - name: Clear Benches
     icon: couch
+  - name: Pick Up Trash
+    icon: trash
+  - name: Pick Up Toys
+    icon: gamepad
+  - name: Pick Up Clothes
+    icon: shirt

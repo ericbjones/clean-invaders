@@ -378,13 +378,17 @@ function resetTasks(fromBroadcast = false) {
         })
         .then(data => {
             console.log('Tasks reset successful:', data);
-            loadProgress();  // Reload progress bars after reset
             // Broadcast the reset to other clients
             broadcastAction('resetTasks');
+            // Load progress after reset
+            loadProgress();
         })
         .catch(error => {
             console.error('Error resetting tasks:', error);
         });
+    } else {
+        // If this was triggered by a broadcast, just reload progress
+        loadProgress();
     }
 }
 

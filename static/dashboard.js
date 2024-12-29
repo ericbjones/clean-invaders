@@ -223,6 +223,7 @@ function setView(view, fromBroadcast = false) {
         }
     });
 
+    // Only broadcast if this wasn't triggered by a broadcast
     if (!fromBroadcast) {
         broadcastAction('setView', { view });
     }
@@ -828,6 +829,15 @@ function initializeTaskHandlers() {
                             // Update the tooltip text with custom label if it exists
                             const label = customLabels[newAssignment.toString()] || defaultLabels[newAssignment.toString()];
                             taskIcon.setAttribute('data-assignment', label);
+                            
+                            // Broadcast the assignment change
+                            broadcastAction('updateAssignment', {
+                                floor,
+                                room,
+                                task: taskId,
+                                oldAssignment: currentAssignment,
+                                newAssignment
+                            });
                         }
                     })
                     .catch(error => {

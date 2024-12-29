@@ -1155,6 +1155,8 @@ function handleTaskCompletion(task, floor, room) {
                     setTimeout(() => {
                         // Store showCompleted state in localStorage before redirect
                         localStorage.setItem('showCompleted', showCompleted);
+                        // Broadcast navigation before redirecting
+                        broadcastDashboardNavigation();
                         window.location.href = '/';
                     }, 1500);
                 }, 600);
@@ -1209,4 +1211,17 @@ function createParticlesAtPosition(x, y, isRoom = false) {
 // Add function to broadcast room navigation
 function broadcastRoomNavigation(floor, room) {
     broadcastAction('navigateToRoom', { floor, room });
-} 
+}
+
+// Add function to broadcast dashboard navigation
+function broadcastDashboardNavigation() {
+    broadcastAction('navigateToRoom', { floor: 'dashboard', room: 'dashboard' });
+}
+
+// Add history state handling
+window.addEventListener('popstate', function(event) {
+    // If we're on the dashboard, broadcast it
+    if (window.location.pathname === '/') {
+        broadcastDashboardNavigation();
+    }
+}); 

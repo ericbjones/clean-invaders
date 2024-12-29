@@ -9,7 +9,12 @@ function initWebSocket() {
     // Use secure WebSocket if the page is loaded over HTTPS
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}/ws`;
+    console.log('Connecting to WebSocket at:', wsUrl);
     ws = new WebSocket(wsUrl);
+
+    ws.onopen = function() {
+        console.log('WebSocket connected');
+    };
 
     ws.onmessage = function(event) {
         const data = JSON.parse(event.data);
@@ -17,8 +22,13 @@ function initWebSocket() {
     };
 
     ws.onclose = function() {
+        console.log('WebSocket disconnected, attempting to reconnect...');
         // Try to reconnect every 5 seconds
         setTimeout(initWebSocket, 5000);
+    };
+
+    ws.onerror = function(error) {
+        console.error('WebSocket error:', error);
     };
 }
 

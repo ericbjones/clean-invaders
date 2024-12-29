@@ -1,10 +1,16 @@
 from flask import Flask, render_template, jsonify, request, redirect, send_from_directory
+from flask_sock import Sock
 import sqlite3
 import yaml
 import os
 from datetime import datetime
+import json
 
 app = Flask(__name__)
+sock = Sock(app)
+
+# Store active WebSocket connections
+connections = set()
 
 def init_db():
     conn = sqlite3.connect('cleaning.db')
@@ -289,6 +295,32 @@ def reset_hidden():
             'success': False,
             'error': str(e)
         }), 500
+
+@sock.route('/ws')
+def handle_websocket(ws):
+    # Add this connection to our set
+    connections.add(ws)
+    try:
+        while True:
+            # Receive message from this client
+            data = ws.receive()
+            if data:
+                message = json.loads(data)
+                # Broadcast to all other clients
+                for conn in connections:
+                    if conn != ws:  # Don't send back to sender
+                        try:
+                            conn.send(data)
+                        except Exception as e:
+                            print(f"Error sending to client: {e}")
+                            if conn in connections:
+                                connections.remove(conn)
+    except Exception as e:
+        print(f"WebSocket error: {e}")
+    finally:
+        # Remove connection when done
+        if ws in connections:
+            connections.remove(ws)
 
 if __name__ == '__main__':
     init_db()

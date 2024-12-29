@@ -1,0 +1,6 @@
+# Log files
+flask-error.log
+flask-output.log
+git_monitor.log
+gitmonitor-error.log
+gitmonitor-output.log

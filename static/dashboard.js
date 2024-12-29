@@ -1,3 +1,30 @@
+// Constants
+const defaultLabels = {
+    'all': 'All',
+    '0': 'Unassigned'
+};
+
+const SOUNDS = {
+    progress: new Audio('/static/sounds/zap.mp3'),
+    complete: new Audio('/static/sounds/success.mp3'),
+    roomComplete: new Audio('/static/sounds/huge-success.mp3'),
+    connect: new Audio('/static/sounds/connect.mp3')
+};
+
+const assignmentMap = {
+    'Unassigned': 0,
+    'Assignment1': 1,
+    'Assignment2': 2,
+    'Assignment3': 3,
+    'Assignment4': 4,
+    'Assignment5': 5,
+    'Assignment6': 6
+};
+
+const assignments = ['Unassigned', 'Assignment1', 'Assignment2', 'Assignment3', 'Assignment4', 'Assignment5', 'Assignment6'];
+
+let customLabels = JSON.parse(localStorage.getItem('customLabels')) || {};
+
 let currentView = 'all';
 let activeFilters = new Set(['all']);
 let showHidden = false;
@@ -113,53 +140,49 @@ function broadcastAction(action, data = {}) {
     }
 }
 
-// Move assignmentMap to the top level so it's available to all functions
-const assignmentMap = {
-    'Unassigned': 0,
-    'Assignment1': 1,
-    'Assignment2': 2,
-    'Assignment3': 3,
-    'Assignment4': 4,
-    'Assignment5': 5,
-    'Assignment6': 6
-};
+// Audio context for better control
+let audioContext = null;
 
-// Add these at the top level with other constants
-const defaultLabels = {
-    'all': 'All',
-    '0': 'Unassigned'
-};
-
-const assignments = ['Unassigned', 'Assignment1', 'Assignment2', 'Assignment3', 'Assignment4', 'Assignment5', 'Assignment6'];
-
-let customLabels = JSON.parse(localStorage.getItem('customLabels')) || {};
-
-// Add at the top with other constants
-const SOUNDS = {
-    progress: new Audio('/static/sounds/zap.mp3'),
-    complete: new Audio('/static/sounds/success.mp3'),
-    roomComplete: new Audio('/static/sounds/huge-success.mp3'),
-    connect: new Audio('/static/sounds/connect.mp3')
-};
-
-// Preload sounds
-function preloadSounds() {
-    for (const sound of Object.values(SOUNDS)) {
-        sound.preload = 'auto';  // Force preload
-        sound.volume = sound === SOUNDS.connect ? 0.3 : 1.0;  // Lower volume for connect sound
-        sound.load();  // Start loading
-        // Try to play (and immediately pause) to handle autoplay restrictions
-        sound.play().then(() => {
-            sound.pause();
-            sound.currentTime = 0;
-        }).catch(() => {
-            console.log('Sound preload play failed - this is normal if no user interaction yet');
-        });
+// Initialize audio context and unlock audio
+async function initAudio() {
+    try {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Create a silent buffer
+        const buffer = audioContext.createBuffer(1, 1, 22050);
+        const source = audioContext.createBufferSource();
+        source.buffer = buffer;
+        source.connect(audioContext.destination);
+        
+        // Play the silent buffer
+        source.start(0);
+        
+        // Resume audio context
+        if (audioContext.state === 'suspended') {
+            await audioContext.resume();
+        }
+        
+        // Also try to unlock each sound
+        for (const sound of Object.values(SOUNDS)) {
+            sound.play().then(() => {
+                sound.pause();
+                sound.currentTime = 0;
+            }).catch(() => {
+                // Expected to fail on some browsers, that's okay
+            });
+        }
+    } catch (e) {
+        console.log('Audio initialization failed:', e);
     }
 }
 
 // Optimize sound playback
 function playSound(sound) {
+    // Try to resume audio context if it's suspended
+    if (audioContext && audioContext.state === 'suspended') {
+        audioContext.resume();
+    }
+
     // Clone the audio to allow overlapping sounds
     const clone = sound.cloneNode();
     clone.volume = sound.volume;
@@ -758,11 +781,11 @@ function initializeTitleHandling() {
 
 // Add title initialization to DOMContentLoaded
 document.addEventListener('DOMContentLoaded', () => {
-    // Initialize WebSocket first
-    initWebSocket();
+    // Initialize audio first
+    initAudio();
     
-    // Preload sounds
-    preloadSounds();
+    // Initialize WebSocket
+    initWebSocket();
     
     // Initialize title handling
     initializeTitleHandling();

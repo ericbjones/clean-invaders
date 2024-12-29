@@ -148,33 +148,27 @@ def get_progress():
 # Add this new route to initialize or reset tasks
 @app.route('/api/reset_tasks', methods=['POST'])
 def reset_tasks():
-    conn = sqlite3.connect('cleaning.db')
-    c = conn.cursor()
-    
-    # First get all hidden states
-    c.execute('SELECT room, floor, hidden FROM tasks')
-    hidden_states = {}
-    for room, floor, hidden in c.fetchall():
-        hidden_states[(room, floor)] = hidden
-    
-    # Delete all tasks
-    c.execute('DELETE FROM tasks')
-    conn.commit()
-    
-    # Reinitialize tasks with preserved hidden states
-    config = load_cleaning_config()
-    for floor, rooms in config.items():
-        for room_name, room_data in rooms.items():
-            hidden_state = hidden_states.get((room_name, floor), 0)
-            for task in room_data['tasks']:
-                c.execute('''
-                    INSERT OR IGNORE INTO tasks (room, task, progress, assignment, last_updated, floor, hidden)
-                    VALUES (?, ?, 0, 0, CURRENT_TIMESTAMP, ?, ?)
-                ''', (room_name, task['name'], floor, hidden_state))
-    
-    conn.commit()
-    conn.close()
-    return jsonify({'success': True})
+    try:
+        conn = sqlite3.connect('cleaning.db')
+        c = conn.cursor()
+        
+        # Reset all tasks to 0 progress
+        c.execute('''
+            UPDATE tasks 
+            SET progress = 0, last_updated = CURRENT_TIMESTAMP
+        ''')
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True})
+        
+    except Exception as e:
+        print(f"Error resetting tasks: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 @app.route('/api/reset_room', methods=['POST'])
 def reset_room():

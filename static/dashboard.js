@@ -69,7 +69,11 @@ function handleWebSocketMessage(data) {
             
         case 'navigateToRoom':
             // Handle room navigation from other clients
-            window.location.href = `/room/${data.floor}/${data.room}`;
+            if (data.floor === 'dashboard') {
+                window.location.href = '/';
+            } else {
+                window.location.href = `/room/${data.floor}/${data.room}`;
+            }
             break;
             
         case 'setView':

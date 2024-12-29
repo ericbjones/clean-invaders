@@ -5,5 +5,5 @@ tasks:
     icon: broom
   - name: Dust Surfaces
     icon: feather
-  - name: Empty Trash
-    icon: trash 
+  - name: Put Away Toys
+    icon: gamepad

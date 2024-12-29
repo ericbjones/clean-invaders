@@ -7,8 +7,7 @@ const defaultLabels = {
 const SOUNDS = {
     progress: new Audio('/static/sounds/zap.mp3'),
     complete: new Audio('/static/sounds/success.mp3'),
-    roomComplete: new Audio('/static/sounds/huge-success.mp3'),
-    connect: new Audio('/static/sounds/connect.mp3')
+    roomComplete: new Audio('/static/sounds/huge-success.mp3')
 };
 
 const assignmentMap = {
@@ -41,8 +40,6 @@ function initWebSocket() {
 
     ws.onopen = function() {
         console.log('WebSocket connected');
-        // Play connection sound to initialize audio context
-        playSound(SOUNDS.connect);
     };
 
     ws.onmessage = function(event) {
@@ -178,11 +175,6 @@ async function initAudio() {
 
 // Optimize sound playback
 function playSound(sound) {
-    // Try to resume audio context if it's suspended
-    if (audioContext && audioContext.state === 'suspended') {
-        audioContext.resume();
-    }
-
     // Clone the audio to allow overlapping sounds
     const clone = sound.cloneNode();
     clone.volume = sound.volume;
@@ -781,9 +773,6 @@ function initializeTitleHandling() {
 
 // Add title initialization to DOMContentLoaded
 document.addEventListener('DOMContentLoaded', () => {
-    // Initialize audio first
-    initAudio();
-    
     // Initialize WebSocket
     initWebSocket();
     

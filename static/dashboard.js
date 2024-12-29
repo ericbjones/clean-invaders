@@ -143,7 +143,15 @@ const SOUNDS = {
 function preloadSounds() {
     for (const sound of Object.values(SOUNDS)) {
         sound.preload = 'auto';  // Force preload
+        sound.volume = 1.0;  // Ensure volume is set
         sound.load();  // Start loading
+        // Try to play (and immediately pause) to handle autoplay restrictions
+        sound.play().then(() => {
+            sound.pause();
+            sound.currentTime = 0;
+        }).catch(() => {
+            console.log('Sound preload play failed - this is normal if no user interaction yet');
+        });
     }
 }
 
@@ -161,6 +169,8 @@ function playSound(sound) {
     if (playPromise !== undefined) {
         playPromise.catch(error => {
             console.log('Sound play failed:', error);
+            // Try to play original sound as fallback
+            sound.play().catch(e => console.log('Fallback sound play failed:', e));
         });
     }
 }

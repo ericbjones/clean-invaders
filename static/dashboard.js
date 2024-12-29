@@ -103,11 +103,13 @@ async function updateProgress(floor, room, task, progress) {
             const progressBar = taskElement?.querySelector('.progress');
             
             if (progressBar) {
+                const oldProgress = parseInt(progressBar.style.width) || 0;
                 progressBar.style.width = `${progress}%`;
                 
                 if (progress === 100) {
                     handleTaskCompletion(taskElement, floor, room);
-                } else {
+                } else if (progress > oldProgress) {
+                    // Only play progress sound when increasing progress
                     playProgressSound();
                 }
             }
@@ -633,7 +635,8 @@ function initializeTaskHandlers() {
             if (!progressBar) return;
 
             const currentWidth = parseInt(progressBar.style.width) || 0;
-            const newProgress = currentWidth + 20;
+            // Reset to 0 if task is completed, otherwise increment by 20
+            const newProgress = currentWidth === 100 ? 0 : currentWidth + 20;
             
             // Get floor and room info from data attributes
             const floor = task.dataset.floor;
@@ -907,6 +910,14 @@ function handleTaskCompletion(task, floor, room) {
                 createParticles(task);
                 task.classList.add('exploding');
                 
+                // Always remove exploding class after animation
+                task.addEventListener('animationend', () => {
+                    task.classList.remove('exploding');
+                    if (!showCompleted) {
+                        task.style.display = 'none';
+                    }
+                }, { once: true });
+                
                 // Check room completion immediately
                 const roomCard = task.closest('.room-card');
                 if (roomCard) {
@@ -926,17 +937,13 @@ function handleTaskCompletion(task, floor, room) {
                                 roomCard.classList.add('exploding');
                                 
                                 roomCard.addEventListener('animationend', () => {
+                                    roomCard.classList.remove('exploding');
                                     if (!showCompleted) {
                                         roomCard.style.display = 'none';
                                     }
                                 });
                             }, 800);
                         }, 300);
-                    } else if (!showCompleted) {
-                        // Hide task after explosion if not showing completed
-                        task.addEventListener('animationend', () => {
-                            task.style.display = 'none';
-                        }, { once: true });
                     }
                 }
             }
@@ -944,6 +951,14 @@ function handleTaskCompletion(task, floor, room) {
             // Room view handling
             createParticles(task);
             task.classList.add('exploding');
+            
+            // Always remove exploding class after animation
+            task.addEventListener('animationend', () => {
+                task.classList.remove('exploding');
+                if (!showCompleted) {
+                    task.style.display = 'none';
+                }
+            }, { once: true });
             
             // Check if all tasks in room are complete
             const roomView = task.closest('.room-view');
@@ -980,11 +995,6 @@ function handleTaskCompletion(task, floor, room) {
                         window.location.href = '/';
                     }, 1500);
                 }, 600);
-            } else if (!showCompleted) {
-                // Hide task after explosion if not showing completed
-                task.addEventListener('animationend', () => {
-                    task.style.display = 'none';
-                }, { once: true });
             }
         }
     }, 200);

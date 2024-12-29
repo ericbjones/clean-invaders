@@ -249,7 +249,25 @@ function resetRoom(floor, room) {
     })
     .then(data => {
         console.log('Room reset successful:', data);
-        loadProgress();
+        
+        // First reset all task states in this room
+        document.querySelectorAll(`.task[data-floor="${floor}"][data-room="${room}"]`).forEach(task => {
+            // Remove animation classes
+            task.classList.remove('exploding', 'task-complete-shake');
+            // Reset display style
+            task.style.display = '';
+            // Reset progress bar
+            const progressBar = task.querySelector('.progress');
+            if (progressBar) {
+                progressBar.style.width = '0%';
+            }
+        });
+        
+        // Then load progress to update any other states
+        loadProgress().then(() => {
+            // Update task visibility to handle filters
+            updateTaskVisibility();
+        });
     })
     .catch(error => {
         console.error('Error resetting room:', error);
@@ -908,26 +926,16 @@ function handleTaskCompletion(task, floor, room) {
                                 roomCard.classList.add('exploding');
                                 
                                 roomCard.addEventListener('animationend', () => {
-                                    if (!showCompleted && roomCard.parentElement) {
-                                        // Force reflow before removal
+                                    if (!showCompleted) {
                                         roomCard.style.display = 'none';
-                                        requestAnimationFrame(() => {
-                                            roomCard.parentElement.removeChild(roomCard);
-                                        });
                                     }
                                 });
                             }, 800);
                         }, 300);
                     } else if (!showCompleted) {
-                        // Remove task after explosion if not showing completed
+                        // Hide task after explosion if not showing completed
                         task.addEventListener('animationend', () => {
-                            if (task.parentElement) {
-                                // Force reflow before removal
-                                task.style.display = 'none';
-                                requestAnimationFrame(() => {
-                                    task.parentElement.removeChild(task);
-                                });
-                            }
+                            task.style.display = 'none';
                         }, { once: true });
                     }
                 }
@@ -973,15 +981,9 @@ function handleTaskCompletion(task, floor, room) {
                     }, 1500);
                 }, 600);
             } else if (!showCompleted) {
-                // Remove task after explosion if not showing completed
+                // Hide task after explosion if not showing completed
                 task.addEventListener('animationend', () => {
-                    if (task.parentElement) {
-                        // Force reflow before removal
-                        task.style.display = 'none';
-                        requestAnimationFrame(() => {
-                            task.parentElement.removeChild(task);
-                        });
-                    }
+                    task.style.display = 'none';
                 }, { once: true });
             }
         }

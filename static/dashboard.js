@@ -3,6 +3,95 @@ let activeFilters = new Set(['all']);
 let showHidden = false;
 let showCompleted = false;
 
+// WebSocket connection
+let ws;
+function initWebSocket() {
+    // Use secure WebSocket if the page is loaded over HTTPS
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws`;
+    ws = new WebSocket(wsUrl);
+
+    ws.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+        handleWebSocketMessage(data);
+    };
+
+    ws.onclose = function() {
+        // Try to reconnect every 5 seconds
+        setTimeout(initWebSocket, 5000);
+    };
+}
+
+function handleWebSocketMessage(data) {
+    switch(data.action) {
+        case 'updateProgress':
+            // Update progress without sending back to server
+            const taskElement = document.querySelector(`.task[data-floor="${data.floor}"][data-room="${data.room}"][data-task="${data.task}"]`);
+            if (taskElement) {
+                const progressBar = taskElement.querySelector('.progress');
+                if (progressBar) {
+                    const oldProgress = parseInt(progressBar.style.width) || 0;
+                    progressBar.style.width = `${data.progress}%`;
+                    
+                    // Play sounds and show animations
+                    if (data.progress === 100) {
+                        playCompleteSound();
+                        handleTaskCompletion(taskElement, data.floor, data.room);
+                    } else if (data.progress > oldProgress) {
+                        playProgressSound();
+                    }
+                }
+            }
+            break;
+            
+        case 'updateAssignment':
+            const taskIcon = document.querySelector(`.task[data-floor="${data.floor}"][data-room="${data.room}"][data-task="${data.task}"] .task-header i`);
+            if (taskIcon) {
+                // Remove old assignment class
+                taskIcon.classList.remove(`assigned-${data.oldAssignment}`);
+                // Add new assignment class
+                taskIcon.classList.add(`assigned-${data.newAssignment}`);
+                // Update tooltip
+                const label = customLabels[data.newAssignment.toString()] || defaultLabels[data.newAssignment.toString()];
+                taskIcon.setAttribute('data-assignment', label);
+            }
+            break;
+            
+        case 'setView':
+            setView(data.view, true);  // true means don't broadcast
+            break;
+            
+        case 'toggleShowCompleted':
+            toggleShowCompleted(true);  // true means don't broadcast
+            break;
+            
+        case 'toggleShowHidden':
+            toggleShowHidden(true);  // true means don't broadcast
+            break;
+            
+        case 'resetRoom':
+            resetRoom(data.floor, data.room, true);  // true means don't broadcast
+            break;
+            
+        case 'resetTasks':
+            resetTasks(true);  // true means don't broadcast
+            break;
+            
+        case 'resetHidden':
+            resetHidden(true);  // true means don't broadcast
+            break;
+    }
+}
+
+function broadcastAction(action, data = {}) {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+            action,
+            ...data
+        }));
+    }
+}
+
 // Move assignmentMap to the top level so it's available to all functions
 const assignmentMap = {
     'Unassigned': 0,
@@ -109,7 +198,7 @@ function loadFilters() {
     }
 }
 
-function setView(view) {
+function setView(view, fromBroadcast = false) {
     currentView = view;
     document.querySelectorAll('.view-controls button').forEach(btn => {
         btn.classList.remove('active');
@@ -123,29 +212,38 @@ function setView(view) {
             floor.style.display = 'none';
         }
     });
+
+    if (!fromBroadcast) {
+        broadcastAction('setView', { view });
+    }
 }
 
-async function updateProgress(floor, room, task, progress) {
-    try {
-        const response = await fetch('/api/update_progress', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ floor, room, task, progress })
-        });
-        
-        if (response.ok) {
-            // Find the task's progress bar using the task element itself
-            const taskElement = document.querySelector(`.task[data-floor="${floor}"][data-room="${room}"][data-task="${task}"]`);
+async function updateProgress(floor, room, task, progress, fromBroadcast = false) {
+    if (!fromBroadcast) {
+        try {
+            const response = await fetch('/api/update_progress', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ floor, room, task, progress })
+            });
             
-            if (taskElement && progress === 100) {
-                // Handle completion animations and state changes
-                handleTaskCompletion(taskElement, floor, room);
+            if (response.ok) {
+                // Find the task's progress bar using the task element itself
+                const taskElement = document.querySelector(`.task[data-floor="${floor}"][data-room="${room}"][data-task="${task}"]`);
+                
+                if (taskElement && progress === 100) {
+                    // Handle completion animations and state changes
+                    handleTaskCompletion(taskElement, floor, room);
+                }
+                
+                // Broadcast the update to other clients
+                broadcastAction('updateProgress', { floor, room, task, progress });
             }
+        } catch (error) {
+            console.error('Error updating progress:', error);
         }
-    } catch (error) {
-        console.error('Error updating progress:', error);
     }
 }
 
@@ -240,70 +338,79 @@ function loadProgress() {
         });
 }
 
-function resetTasks() {
-    fetch('/api/reset_tasks', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        }
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        return response.json();
-    })
-    .then(data => {
-        console.log('Tasks reset successful:', data);
-        loadProgress();  // Reload progress bars after reset
-    })
-    .catch(error => {
-        console.error('Error resetting tasks:', error);
-    });
+function resetTasks(fromBroadcast = false) {
+    if (!fromBroadcast) {
+        fetch('/api/reset_tasks', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Tasks reset successful:', data);
+            loadProgress();  // Reload progress bars after reset
+            // Broadcast the reset to other clients
+            broadcastAction('resetTasks');
+        })
+        .catch(error => {
+            console.error('Error resetting tasks:', error);
+        });
+    }
 }
 
-function resetRoom(floor, room) {
-    fetch('/api/reset_room', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            floor: floor,
-            room: room
+function resetRoom(floor, room, fromBroadcast = false) {
+    if (!fromBroadcast) {
+        fetch('/api/reset_room', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                floor: floor,
+                room: room
+            })
         })
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        return response.json();
-    })
-    .then(data => {
-        console.log('Room reset successful:', data);
-        
-        // First reset all task states in this room
-        document.querySelectorAll(`.task[data-floor="${floor}"][data-room="${room}"]`).forEach(task => {
-            // Remove animation classes
-            task.classList.remove('exploding', 'task-complete-shake');
-            // Reset display style
-            task.style.display = '';
-            // Reset progress bar
-            const progressBar = task.querySelector('.progress');
-            if (progressBar) {
-                progressBar.style.width = '0%';
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
             }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Room reset successful:', data);
+            
+            // First reset all task states in this room
+            document.querySelectorAll(`.task[data-floor="${floor}"][data-room="${room}"]`).forEach(task => {
+                // Remove animation classes
+                task.classList.remove('exploding', 'task-complete-shake');
+                // Reset display style
+                task.style.display = '';
+                // Reset progress bar
+                const progressBar = task.querySelector('.progress');
+                if (progressBar) {
+                    progressBar.style.width = '0%';
+                }
+            });
+            
+            // Then load progress to update any other states
+            loadProgress().then(() => {
+                // Update task visibility to handle filters
+                updateTaskVisibility();
+            });
+
+            // Broadcast the reset to other clients
+            broadcastAction('resetRoom', { floor, room });
+        })
+        .catch(error => {
+            console.error('Error resetting room:', error);
         });
-        
-        // Then load progress to update any other states
-        loadProgress().then(() => {
-            // Update task visibility to handle filters
-            updateTaskVisibility();
-        });
-    })
-    .catch(error => {
-        console.error('Error resetting room:', error);
-    });
+    }
 }
 
 function updateAssignment(floor, room, task, assignment) {
@@ -442,11 +549,15 @@ function showTitleContextMenu(e, titleElement) {
     input.focus();
 }
 
-function toggleShowHidden() {
+function toggleShowHidden(fromBroadcast = false) {
     showHidden = !showHidden;
     const btn = document.getElementById('show-hidden-btn');
     btn.innerHTML = `<i class="fas fa-eye${showHidden ? '' : '-slash'}"></i> ${showHidden ? 'Hide Hidden' : 'Show Hidden'}`;
     updateRoomVisibility();
+
+    if (!fromBroadcast) {
+        broadcastAction('toggleShowHidden');
+    }
 }
 
 function toggleRoomHidden(floor, room) {
@@ -468,31 +579,35 @@ function toggleRoomHidden(floor, room) {
     });
 }
 
-function resetHidden() {
-    fetch('/api/reset_hidden', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        }
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        return response.json();
-    })
-    .then(data => {
-        console.log('Hidden rooms reset successful:', data);
-        // Remove is-hidden class from all rooms
-        document.querySelectorAll('.room-card.is-hidden').forEach(room => {
-            room.classList.remove('is-hidden');
+function resetHidden(fromBroadcast = false) {
+    if (!fromBroadcast) {
+        fetch('/api/reset_hidden', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Hidden rooms reset successful:', data);
+            // Remove is-hidden class from all rooms
+            document.querySelectorAll('.room-card.is-hidden').forEach(room => {
+                room.classList.remove('is-hidden');
+            });
+            // Update visibility to show newly unhidden rooms
+            updateTaskVisibility();
+            // Broadcast the reset to other clients
+            broadcastAction('resetHidden');
+        })
+        .catch(error => {
+            console.error('Error resetting hidden rooms:', error);
         });
-        // Update visibility to show newly unhidden rooms
-        updateTaskVisibility();
-    })
-    .catch(error => {
-        console.error('Error resetting hidden rooms:', error);
-    });
+    }
 }
 
 function updateRoomVisibility() {
@@ -593,7 +708,10 @@ function initializeTitleHandling() {
 
 // Add title initialization to DOMContentLoaded
 document.addEventListener('DOMContentLoaded', () => {
-    // Preload sounds first
+    // Initialize WebSocket first
+    initWebSocket();
+    
+    // Preload sounds
     preloadSounds();
     
     // Initialize title handling
@@ -623,8 +741,8 @@ document.addEventListener('DOMContentLoaded', () => {
 function initializeTaskHandlers() {
     // Initialize task handlers
     document.querySelectorAll('.task').forEach(task => {
-        // Progress click handler
-        task.addEventListener('click', async (e) => {
+        // Common click handler function
+        const handleTaskClick = async (e) => {
             // Don't handle progress clicks if clicking the icon
             if (e.target.closest('.task-header i')) return;
             
@@ -660,6 +778,15 @@ function initializeTaskHandlers() {
 
             // Update progress in background
             updateProgress(floor, room, taskId, newProgress);
+        };
+
+        // Left click handler
+        task.addEventListener('click', handleTaskClick);
+        
+        // Right click handler
+        task.addEventListener('contextmenu', (e) => {
+            e.preventDefault();  // Prevent default context menu
+            handleTaskClick(e);
         });
 
         // Assignment icon click handler
@@ -822,7 +949,7 @@ function initializeColorFilters() {
     });
 }
 
-function toggleShowCompleted() {
+function toggleShowCompleted(fromBroadcast = false) {
     showCompleted = !showCompleted;
     // Save to localStorage immediately when toggled
     localStorage.setItem('showCompleted', showCompleted);
@@ -830,6 +957,10 @@ function toggleShowCompleted() {
     const btn = document.getElementById('show-completed-btn');
     btn.innerHTML = `<i class="fas fa-check"></i> ${showCompleted ? 'Hide Completed' : 'Show Completed'}`;
     updateTaskVisibility();
+
+    if (!fromBroadcast) {
+        broadcastAction('toggleShowCompleted');
+    }
 }
 
 function createParticles(element, isRoom = false) {

@@ -701,8 +701,9 @@ Element.prototype.closest = Element.prototype.closest || function (selector) {
 };
 
 // Add contains selector for case-insensitive text content matching
-HTMLElement.prototype.contains = function(text) {
-    return this.textContent.trim().toLowerCase() === text.toLowerCase();
+HTMLElement.prototype.textContains = function(text) {
+    if (typeof text !== 'string') return false;
+    return this.textContent.trim().toLowerCase().includes(text.toLowerCase());
 };
 
 // Add title context menu handler
@@ -908,18 +909,26 @@ function handleTaskCompletion(task, floor, room) {
                                 
                                 roomCard.addEventListener('animationend', () => {
                                     if (!showCompleted && roomCard.parentElement) {
-                                        roomCard.parentElement.removeChild(roomCard);
+                                        // Force reflow before removal
+                                        roomCard.style.display = 'none';
+                                        requestAnimationFrame(() => {
+                                            roomCard.parentElement.removeChild(roomCard);
+                                        });
                                     }
                                 });
                             }, 800);
                         }, 300);
                     } else if (!showCompleted) {
                         // Remove task after explosion if not showing completed
-                        setTimeout(() => {
+                        task.addEventListener('animationend', () => {
                             if (task.parentElement) {
-                                task.parentElement.removeChild(task);
+                                // Force reflow before removal
+                                task.style.display = 'none';
+                                requestAnimationFrame(() => {
+                                    task.parentElement.removeChild(task);
+                                });
                             }
-                        }, 600);
+                        }, { once: true });
                     }
                 }
             }
@@ -965,11 +974,15 @@ function handleTaskCompletion(task, floor, room) {
                 }, 600);
             } else if (!showCompleted) {
                 // Remove task after explosion if not showing completed
-                setTimeout(() => {
+                task.addEventListener('animationend', () => {
                     if (task.parentElement) {
-                        task.parentElement.removeChild(task);
+                        // Force reflow before removal
+                        task.style.display = 'none';
+                        requestAnimationFrame(() => {
+                            task.parentElement.removeChild(task);
+                        });
                     }
-                }, 600);
+                }, { once: true });
             }
         }
     }, 200);

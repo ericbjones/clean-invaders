@@ -32,6 +32,8 @@ def init_db():
     # Initialize tasks from config if they don't exist
     config = load_cleaning_config()
     for floor, rooms in config.items():
+        if floor not in ['upstairs', 'downstairs']:  # Skip non-floor keys like color_labels
+            continue
         for room_name, room_data in rooms.items():
             for task in room_data['tasks']:
                 c.execute('''
@@ -44,6 +46,13 @@ def init_db():
 
 def load_cleaning_config():
     config = {'upstairs': {}, 'downstairs': {}}
+    
+    # Load color labels
+    labels_path = os.path.join('config', 'labels.yaml')
+    if os.path.exists(labels_path):
+        with open(labels_path, 'r') as f:
+            labels_config = yaml.safe_load(f)
+            config['color_labels'] = labels_config['color_labels']
     
     for floor in ['upstairs', 'downstairs']:
         floor_path = os.path.join('config', floor)

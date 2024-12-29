@@ -103,14 +103,10 @@ async function updateProgress(floor, room, task, progress) {
             const progressBar = taskElement?.querySelector('.progress');
             
             if (progressBar) {
-                const oldProgress = parseInt(progressBar.style.width) || 0;
                 progressBar.style.width = `${progress}%`;
                 
                 if (progress === 100) {
                     handleTaskCompletion(taskElement, floor, room);
-                } else if (progress > oldProgress) {
-                    // Only play progress sound when increasing progress
-                    playProgressSound();
                 }
             }
         }
@@ -638,6 +634,13 @@ function initializeTaskHandlers() {
             // Reset to 0 if task is completed, otherwise increment by 20
             const newProgress = currentWidth === 100 ? 0 : currentWidth + 20;
             
+            // Play sounds first
+            if (newProgress === 100) {
+                playCompleteSound();
+            } else if (newProgress > currentWidth) {
+                playProgressSound();
+            }
+            
             // Get floor and room info from data attributes
             const floor = task.dataset.floor;
             const room = task.dataset.room;
@@ -897,12 +900,10 @@ function handleTaskCompletion(task, floor, room) {
     
     // Add shake animation first
     task.classList.add('task-complete-shake');
-    playProgressSound();
 
     // After shake animation (200ms)
     setTimeout(() => {
         task.classList.remove('task-complete-shake');
-        playCompleteSound();
 
         // Create particles and start explosion
         if (isDashboardView) {

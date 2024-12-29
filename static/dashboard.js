@@ -14,6 +14,8 @@ function initWebSocket() {
 
     ws.onopen = function() {
         console.log('WebSocket connected');
+        // Play connection sound to initialize audio context
+        playSound(SOUNDS.connect);
     };
 
     ws.onmessage = function(event) {
@@ -136,14 +138,15 @@ let customLabels = JSON.parse(localStorage.getItem('customLabels')) || {};
 const SOUNDS = {
     progress: new Audio('/static/sounds/zap.mp3'),
     complete: new Audio('/static/sounds/success.mp3'),
-    roomComplete: new Audio('/static/sounds/huge-success.mp3')
+    roomComplete: new Audio('/static/sounds/huge-success.mp3'),
+    connect: new Audio('/static/sounds/connect.mp3')
 };
 
 // Preload sounds
 function preloadSounds() {
     for (const sound of Object.values(SOUNDS)) {
         sound.preload = 'auto';  // Force preload
-        sound.volume = 1.0;  // Ensure volume is set
+        sound.volume = sound === SOUNDS.connect ? 0.3 : 1.0;  // Lower volume for connect sound
         sound.load();  // Start loading
         // Try to play (and immediately pause) to handle autoplay restrictions
         sound.play().then(() => {

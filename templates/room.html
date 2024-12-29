@@ -43,27 +43,27 @@
                     </button>
                     <button class="color-filter" data-assignment="1">
                         <i class="fas fa-circle assigned-1"></i>
-                        <span>Magenta</span>
+                        <span>{{ config.color_labels.magenta }}</span>
                     </button>
                     <button class="color-filter" data-assignment="2">
                         <i class="fas fa-circle assigned-2"></i>
-                        <span>Orange</span>
+                        <span>{{ config.color_labels.orange }}</span>
                     </button>
                     <button class="color-filter" data-assignment="3">
                         <i class="fas fa-circle assigned-3"></i>
-                        <span>Red</span>
+                        <span>{{ config.color_labels.red }}</span>
                     </button>
                     <button class="color-filter" data-assignment="4">
                         <i class="fas fa-circle assigned-4"></i>
-                        <span>Blue</span>
+                        <span>{{ config.color_labels.blue }}</span>
                     </button>
                     <button class="color-filter" data-assignment="5">
                         <i class="fas fa-circle assigned-5"></i>
-                        <span>Green</span>
+                        <span>{{ config.color_labels.green }}</span>
                     </button>
                     <button class="color-filter" data-assignment="6">
                         <i class="fas fa-circle assigned-6"></i>
-                        <span>Cyan</span>
+                        <span>{{ config.color_labels.cyan }}</span>
                     </button>
                 </div>
             </div>
@@ -73,7 +73,7 @@
                 <div class="task large" data-floor="{{ floor }}" data-room="{{ room_name }}" data-task="{{ task.name }}">
                     <div class="task-header">
                         <i class="fas fa-{{ task.icon }} assigned-{{ task.assignment|default(0) }}" 
-                           data-assignment="{{ ['Unassigned', 'Magenta', 'Orange', 'Red', 'Blue', 'Green', 'Cyan'][task.assignment|default(0)] }}"></i>
+                           data-assignment="{{ 'Unassigned' if not task.assignment else config.color_labels[task.assignment|default(0)] }}"></i>
                         <span>{{ task.name }}</span>
                     </div>
                     <div class="progress-bar">
@@ -88,7 +88,20 @@
     <!-- Container for particle effects -->
     <div id="particles-container" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999;"></div>
 
+    <script src="{{ url_for('static', filename='dashboard.js') }}"></script>
     <script>
+        // Initialize color labels from server config
+        const serverLabels = {
+            '1': '{{ config.color_labels.magenta }}',
+            '2': '{{ config.color_labels.orange }}',
+            '3': '{{ config.color_labels.red }}',
+            '4': '{{ config.color_labels.blue }}',
+            '5': '{{ config.color_labels.green }}',
+            '6': '{{ config.color_labels.cyan }}'
+        };
+        // Merge server labels with default labels
+        Object.assign(defaultLabels, serverLabels);
+
         function broadcastDashboardNavigation() {
             if (ws && ws.readyState === WebSocket.OPEN) {
                 ws.send(JSON.stringify({
@@ -99,6 +112,5 @@
             }
         }
     </script>
-    <script src="{{ url_for('static', filename='dashboard.js') }}"></script>
 </body>
 </html> 

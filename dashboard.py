@@ -205,7 +205,8 @@ def room_view(floor, room):
         return render_template('room.html', 
                              floor=floor, 
                              room_name=room, 
-                             room_data=room_data)
+                             room_data=room_data,
+                             config=config)
     return redirect('/')
 
 @app.route('/api/update_assignment', methods=['POST'])

@@ -98,7 +98,14 @@
                             <div class="task" data-floor="{{ floor }}" data-room="{{ room_name }}" data-task="{{ task.name }}">
                                 <div class="task-header">
                                     <i class="fas fa-{{ task.icon }} assigned-{{ task.assignment|default(0) }}" 
-                                       data-assignment="{{ ['Unassigned', 'Red', 'Cyan', 'Yellow', 'Green', 'Purple'][task.assignment|default(0)] }}"></i>
+                                       data-assignment="{{ 'Unassigned' if not task.assignment else config.color_labels[{
+                                           1: 'magenta',
+                                           2: 'orange',
+                                           3: 'red',
+                                           4: 'blue',
+                                           5: 'green',
+                                           6: 'cyan'
+                                       }[task.assignment|default(0)]] }}"></i>
                                     <span>{{ task.name }}</span>
                                 </div>
                                 <div class="progress-bar">
@@ -138,6 +145,19 @@
         </div>
     </div>
     
+    <script>
+        // Initialize color labels from server config
+        const serverLabels = {
+            '1': '{{ config.color_labels.magenta }}',
+            '2': '{{ config.color_labels.orange }}',
+            '3': '{{ config.color_labels.red }}',
+            '4': '{{ config.color_labels.blue }}',
+            '5': '{{ config.color_labels.green }}',
+            '6': '{{ config.color_labels.cyan }}'
+        };
+        // Merge server labels with default labels
+        Object.assign(defaultLabels, serverLabels);
+    </script>
     <script src="{{ url_for('static', filename='dashboard.js') }}"></script>
 </body>
 </html> 

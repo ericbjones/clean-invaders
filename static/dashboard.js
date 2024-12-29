@@ -110,27 +110,21 @@ function broadcastAction(action, data = {}) {
 // Move assignmentMap to the top level so it's available to all functions
 const assignmentMap = {
     'Unassigned': 0,
-    'Magenta': 1,
-    'Orange': 2,
-    'Red': 3,
-    'Blue': 4,
-    'Green': 5,
-    'Cyan': 6
+    'Assignment1': 1,
+    'Assignment2': 2,
+    'Assignment3': 3,
+    'Assignment4': 4,
+    'Assignment5': 5,
+    'Assignment6': 6
 };
 
 // Add these at the top level with other constants
 const defaultLabels = {
     'all': 'All',
-    '0': 'Unassigned',
-    '1': 'Magenta',
-    '2': 'Orange',
-    '3': 'Red',
-    '4': 'Blue',
-    '5': 'Green',
-    '6': 'Cyan'
+    '0': 'Unassigned'
 };
 
-const assignments = ['Unassigned', 'Magenta', 'Orange', 'Red', 'Blue', 'Green', 'Cyan'];
+const assignments = ['Unassigned', 'Assignment1', 'Assignment2', 'Assignment3', 'Assignment4', 'Assignment5', 'Assignment6'];
 
 let customLabels = JSON.parse(localStorage.getItem('customLabels')) || {};
 

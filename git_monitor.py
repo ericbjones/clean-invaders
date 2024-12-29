@@ -65,7 +65,7 @@ def main():
                 if update_and_restart():
                     last_commit = current_commit
 
-            time.sleep(60)  # Check every minute
+            time.sleep(10)  # Check every 10 seconds
 
         except Exception as e:
             logging.error(f"Error in main loop: {str(e)}")

@@ -100,14 +100,10 @@ async function updateProgress(floor, room, task, progress) {
         if (response.ok) {
             // Find the task's progress bar using the task element itself
             const taskElement = document.querySelector(`.task[data-floor="${floor}"][data-room="${room}"][data-task="${task}"]`);
-            const progressBar = taskElement?.querySelector('.progress');
             
-            if (progressBar) {
-                progressBar.style.width = `${progress}%`;
-                
-                if (progress === 100) {
-                    handleTaskCompletion(taskElement, floor, room);
-                }
+            if (taskElement && progress === 100) {
+                // Handle completion animations and state changes
+                handleTaskCompletion(taskElement, floor, room);
             }
         }
     } catch (error) {
@@ -617,7 +613,7 @@ function initializeTaskHandlers() {
     // Initialize task handlers
     document.querySelectorAll('.task').forEach(task => {
         // Progress click handler
-        task.addEventListener('click', (e) => {
+        task.addEventListener('click', async (e) => {
             // Don't handle progress clicks if clicking the icon
             if (e.target.closest('.task-header i')) return;
             
@@ -634,19 +630,24 @@ function initializeTaskHandlers() {
             // Reset to 0 if task is completed, otherwise increment by 20
             const newProgress = currentWidth === 100 ? 0 : currentWidth + 20;
             
-            // Play sounds first
+            // Play sounds immediately
             if (newProgress === 100) {
                 playCompleteSound();
+                // Start shake animation immediately
+                task.classList.add('task-complete-shake');
             } else if (newProgress > currentWidth) {
                 playProgressSound();
             }
+            
+            // Update progress bar immediately for better feedback
+            progressBar.style.width = `${newProgress}%`;
             
             // Get floor and room info from data attributes
             const floor = task.dataset.floor;
             const room = task.dataset.room;
             const taskId = task.dataset.task;
 
-            // Update progress
+            // Update progress in background
             updateProgress(floor, room, taskId, newProgress);
         });
 

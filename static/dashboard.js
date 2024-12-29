@@ -37,6 +37,44 @@ const SOUNDS = {
     roomComplete: new Audio('/static/sounds/huge-success.mp3')
 };
 
+// Preload sounds
+function preloadSounds() {
+    for (const sound of Object.values(SOUNDS)) {
+        sound.preload = 'auto';  // Force preload
+        sound.load();  // Start loading
+    }
+}
+
+// Optimize sound playback
+function playSound(sound) {
+    // Clone the audio to allow overlapping sounds
+    const clone = sound.cloneNode();
+    clone.volume = sound.volume;
+    clone.playbackRate = sound.playbackRate;
+    
+    // Play immediately
+    const playPromise = clone.play();
+    
+    // Handle play promise to avoid errors
+    if (playPromise !== undefined) {
+        playPromise.catch(error => {
+            console.log('Sound play failed:', error);
+        });
+    }
+}
+
+function playProgressSound() {
+    playSound(SOUNDS.progress);
+}
+
+function playCompleteSound() {
+    playSound(SOUNDS.complete);
+}
+
+function playRoomCompleteSound() {
+    playSound(SOUNDS.roomComplete);
+}
+
 function saveFilters() {
     localStorage.setItem('activeFilters', JSON.stringify(Array.from(activeFilters)));
 }
@@ -404,36 +442,6 @@ function showTitleContextMenu(e, titleElement) {
     input.focus();
 }
 
-// Add sound playing functions
-function playProgressSound() {
-    SOUNDS.progress.currentTime = 0;  // Reset sound to start
-    SOUNDS.progress.play().catch(e => console.log('Sound play failed:', e));
-}
-
-function playCompleteSound() {
-    SOUNDS.complete.currentTime = 0;
-    SOUNDS.complete.play().catch(e => console.log('Sound play failed:', e));
-}
-
-// Add new function to check room completion
-function isRoomComplete(floor, room) {
-    const tasks = document.querySelectorAll(`.task[data-floor="${floor}"][data-room="${room}"]`);
-    for (const task of tasks) {
-        const progressBar = task.querySelector('.progress');
-        const progress = parseInt(progressBar.style.width) || 0;
-        if (progress !== 100) {
-            return false;
-        }
-    }
-    return true;
-}
-
-// Add new function to play room completion sound
-function playRoomCompleteSound() {
-    SOUNDS.roomComplete.currentTime = 0;
-    SOUNDS.roomComplete.play().catch(e => console.log('Sound play failed:', e));
-}
-
 function toggleShowHidden() {
     showHidden = !showHidden;
     const btn = document.getElementById('show-hidden-btn');
@@ -585,6 +593,9 @@ function initializeTitleHandling() {
 
 // Add title initialization to DOMContentLoaded
 document.addEventListener('DOMContentLoaded', () => {
+    // Preload sounds first
+    preloadSounds();
+    
     // Initialize title handling
     initializeTitleHandling();
     

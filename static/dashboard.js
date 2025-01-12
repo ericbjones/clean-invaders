@@ -10,6 +10,11 @@ const SOUNDS = {
     roomComplete: new Audio('/static/sounds/huge-success.mp3')
 };
 
+// Set maximum volume for all sounds
+Object.values(SOUNDS).forEach(sound => {
+    sound.volume = 1.0;  // Set to maximum volume
+});
+
 const assignmentMap = {
     'Unassigned': 0,
     'Assignment1': 1,
@@ -68,7 +73,7 @@ function handleWebSocketMessage(data) {
                 if (progressBar) {
                     const oldProgress = parseInt(progressBar.style.width) || 0;
                     progressBar.style.width = `${data.progress}%`;
-                    
+
                     // Play sounds and show animations
                     if (data.progress === 100) {
                         playCompleteSound();
@@ -79,7 +84,7 @@ function handleWebSocketMessage(data) {
                 }
             }
             break;
-            
+
         case 'updateAssignment':
             const taskIcon = document.querySelector(`.task[data-floor="${data.floor}"][data-room="${data.room}"][data-task="${data.task}"] .task-header i`);
             if (taskIcon) {
@@ -92,7 +97,7 @@ function handleWebSocketMessage(data) {
                 taskIcon.setAttribute('data-assignment', label);
             }
             break;
-            
+
         case 'navigateToRoom':
             // Handle room navigation from other clients
             if (data.floor === 'dashboard') {
@@ -101,27 +106,27 @@ function handleWebSocketMessage(data) {
                 window.location.href = `/room/${data.floor}/${data.room}`;
             }
             break;
-            
+
         case 'setView':
             setView(data.view, true);  // true means don't broadcast
             break;
-            
+
         case 'toggleShowCompleted':
             toggleShowCompleted(true);  // true means don't broadcast
             break;
-            
+
         case 'toggleShowHidden':
             toggleShowHidden(true);  // true means don't broadcast
             break;
-            
+
         case 'resetRoom':
             resetRoom(data.floor, data.room, true);  // true means don't broadcast
             break;
-            
+
         case 'resetTasks':
             resetTasks(true);  // true means don't broadcast
             break;
-            
+
         case 'resetHidden':
             resetHidden(true);  // true means don't broadcast
             break;
@@ -144,21 +149,21 @@ let audioContext = null;
 async function initAudio() {
     try {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        
+
         // Create a silent buffer
         const buffer = audioContext.createBuffer(1, 1, 22050);
         const source = audioContext.createBufferSource();
         source.buffer = buffer;
         source.connect(audioContext.destination);
-        
+
         // Play the silent buffer
         source.start(0);
-        
+
         // Resume audio context
         if (audioContext.state === 'suspended') {
             await audioContext.resume();
         }
-        
+
         // Also try to unlock each sound
         for (const sound of Object.values(SOUNDS)) {
             sound.play().then(() => {
@@ -177,17 +182,17 @@ async function initAudio() {
 function playSound(sound) {
     // Clone the audio to allow overlapping sounds
     const clone = sound.cloneNode();
-    clone.volume = sound.volume;
-    clone.playbackRate = sound.playbackRate;
-    
+    clone.volume = 1.0;  // Always set to maximum volume
+
     // Play immediately
     const playPromise = clone.play();
-    
+
     // Handle play promise to avoid errors
     if (playPromise !== undefined) {
         playPromise.catch(error => {
             console.log('Sound play failed:', error);
             // Try to play original sound as fallback
+            sound.volume = 1.0;  // Ensure original sound is also at max volume
             sound.play().catch(e => console.log('Fallback sound play failed:', e));
         });
     }
@@ -217,7 +222,7 @@ function loadFilters() {
     } else {
         activeFilters = new Set(['all']);
     }
-    
+
     // Always update filter button states
     document.querySelectorAll('.color-filter').forEach(filter => {
         const assignment = filter.dataset.assignment;
@@ -227,10 +232,10 @@ function loadFilters() {
             filter.classList.remove('active');
         }
     });
-    
+
     // Always update task visibility
     updateTaskVisibility();
-    
+
     // Apply any saved custom labels
     for (const [assignment, label] of Object.entries(customLabels)) {
         document.querySelectorAll(`.color-filter[data-assignment="${assignment}"] span`).forEach(span => {
@@ -245,7 +250,7 @@ function setView(view, fromBroadcast = false) {
         btn.classList.remove('active');
     });
     document.querySelector(`button[onclick="setView('${view}')"]`).classList.add('active');
-    
+
     document.querySelectorAll('.floor').forEach(floor => {
         if (view === 'all' || floor.dataset.floor === view) {
             floor.style.display = 'block';
@@ -270,16 +275,16 @@ async function updateProgress(floor, room, task, progress, fromBroadcast = false
                 },
                 body: JSON.stringify({ floor, room, task, progress })
             });
-            
+
             if (response.ok) {
                 // Find the task's progress bar using the task element itself
                 const taskElement = document.querySelector(`.task[data-floor="${floor}"][data-room="${room}"][data-task="${task}"]`);
-                
+
                 if (taskElement && progress === 100) {
                     // Handle completion animations and state changes
                     handleTaskCompletion(taskElement, floor, room);
                 }
-                
+
                 // Broadcast the update to other clients
                 broadcastAction('updateProgress', { floor, room, task, progress });
             }
@@ -297,13 +302,13 @@ function updateRoomAndFloorProgress(floor, room) {
         roomTotal += parseInt(taskProgress.style.width) || 0;
     });
     const roomProgress = roomTasks.length > 0 ? roomTotal / roomTasks.length : 0;
-    
+
     // Update room progress bar
     const roomProgressBar = document.getElementById(`${floor}-${room}-progress`);
     if (roomProgressBar) {
         roomProgressBar.style.width = `${roomProgress}%`;
     }
-    
+
     // Calculate floor progress
     const floorRooms = document.querySelectorAll(`.floor[data-floor="${floor}"] .room-card`);
     let floorTotal = 0;
@@ -312,7 +317,7 @@ function updateRoomAndFloorProgress(floor, room) {
         floorTotal += parseInt(roomProgressBar?.style.width) || 0;
     });
     const floorProgress = floorRooms.length > 0 ? floorTotal / floorRooms.length : 0;
-    
+
     // Update floor progress bar
     const floorProgressBar = document.getElementById(`${floor}-progress`);
     if (floorProgressBar) {
@@ -328,25 +333,25 @@ function loadProgress() {
             for (const floor in data) {
                 let floorTotal = 0;
                 let floorCount = 0;
-                
+
                 for (const room in data[floor]) {
                     let roomTotal = 0;
                     let roomCount = 0;
-                    
+
                     for (const task in data[floor][room].tasks) {
                         const taskData = data[floor][room].tasks[task];
                         const progress = taskData.progress;
                         const assignment = taskData.assignment;
-                        
+
                         const progressBar = document.getElementById(`${floor}-${room}-${task}-progress`);
                         const taskIcon = document.querySelector(`.task[data-floor="${floor}"][data-room="${room}"][data-task="${task}"] .task-header i`);
-                        
+
                         if (progressBar) {
                             progressBar.style.width = `${progress}%`;
                             roomTotal += progress;
                             roomCount++;
                         }
-                        
+
                         if (taskIcon) {
                             // Remove any existing assignment classes
                             taskIcon.classList.remove('assigned-0', 'assigned-1', 'assigned-2', 'assigned-3', 'assigned-4', 'assigned-5', 'assigned-6');
@@ -358,7 +363,7 @@ function loadProgress() {
                             taskIcon.setAttribute('data-assignment', label);
                         }
                     }
-                    
+
                     const roomProgress = roomCount > 0 ? roomTotal / roomCount : 0;
                     const roomProgressBar = document.getElementById(`${floor}-${room}-progress`);
                     if (roomProgressBar) {
@@ -367,7 +372,7 @@ function loadProgress() {
                         floorCount++;
                     }
                 }
-                
+
                 const floorProgress = floorCount > 0 ? floorTotal / floorCount : 0;
                 const floorProgressBar = document.getElementById(`${floor}-progress`);
                 if (floorProgressBar) {
@@ -430,7 +435,7 @@ function resetRoom(floor, room, fromBroadcast = false) {
         })
         .then(data => {
             console.log('Room reset successful:', data);
-            
+
             // First reset all task states in this room
             document.querySelectorAll(`.task[data-floor="${floor}"][data-room="${room}"]`).forEach(task => {
                 // Remove animation classes
@@ -443,7 +448,7 @@ function resetRoom(floor, room, fromBroadcast = false) {
                     progressBar.style.width = '0%';
                 }
             });
-            
+
             // Then load progress to update any other states
             loadProgress().then(() => {
                 // Update task visibility to handle filters
@@ -469,7 +474,7 @@ function resetRoom(floor, room, fromBroadcast = false) {
                 progressBar.style.width = '0%';
             }
         });
-        
+
         // Then load progress to update any other states
         loadProgress().then(() => {
             // Update task visibility to handle filters
@@ -501,10 +506,10 @@ function updateTaskVisibility() {
         const currentClass = Array.from(taskIcon?.classList || [])
             .find(className => className.startsWith('assigned-'));
         const currentAssignment = currentClass ? currentClass.split('-')[1] : '0';
-        
+
         // Check both completion and filter status
         const matchesFilter = activeFilters.has('all') || activeFilters.has(currentAssignment);
-        
+
         // Hide instead of remove, so we can show again when filter changes
         task.style.display = (!isCompleted || showCompleted) && matchesFilter ? '' : 'none';
     });
@@ -514,7 +519,7 @@ function updateTaskVisibility() {
         const tasks = room.querySelectorAll('.task');
         const hasVisibleTasks = Array.from(tasks).some(task => task.style.display !== 'none');
         const isHidden = room.classList.contains('is-hidden');
-        
+
         // Show room if:
         // 1. It has visible tasks AND
         // 2. Either showHidden is true OR the room is not hidden
@@ -528,17 +533,17 @@ function showContextMenu(e, colorFilter) {
     const menu = document.getElementById('colorLabelMenu');
     const input = document.getElementById('labelInput');
     const assignment = colorFilter.dataset.assignment;
-    
+
     // Position the menu at the click location
     menu.style.left = `${e.pageX}px`;
     menu.style.top = `${e.pageY}px`;
-    
+
     // Set the current label in the input
     input.value = customLabels[assignment] || defaultLabels[assignment];
-    
+
     // Store the current assignment for use in apply/reset
     menu.dataset.currentAssignment = assignment;
-    
+
     // Show the menu
     menu.classList.add('active');
     input.focus();
@@ -547,7 +552,7 @@ function showContextMenu(e, colorFilter) {
 function applyLabel() {
     const menu = document.getElementById('colorLabelMenu');
     const input = document.getElementById('labelInput');
-    
+
     if (menu.dataset.editingTitle === 'true') {
         // Updating dashboard title
         const newTitle = input.value.trim() || 'Cleaning Dashboard';
@@ -563,13 +568,13 @@ function applyLabel() {
             span.textContent = input.value;
         });
     }
-    
+
     hideContextMenu();
 }
 
 function resetLabel() {
     const menu = document.getElementById('colorLabelMenu');
-    
+
     if (menu.dataset.editingTitle === 'true') {
         // Reset dashboard title
         const defaultTitle = 'Cleaning Dashboard';
@@ -585,7 +590,7 @@ function resetLabel() {
             span.textContent = defaultLabels[assignment];
         });
     }
-    
+
     hideContextMenu();
 }
 
@@ -598,17 +603,17 @@ function showTitleContextMenu(e, titleElement) {
     e.preventDefault();
     const menu = document.getElementById('colorLabelMenu');
     const input = document.getElementById('labelInput');
-    
+
     // Position the menu at the click location
     menu.style.left = `${e.pageX}px`;
     menu.style.top = `${e.pageY}px`;
-    
+
     // Set the current title in the input
     input.value = dashboardTitle;
-    
+
     // Mark this as a title edit
     menu.dataset.editingTitle = 'true';
-    
+
     // Show the menu
     menu.classList.add('active');
     input.focus();
@@ -685,22 +690,22 @@ function updateRoomVisibility() {
                 const room = card.querySelector('h3').textContent.trim();
                 const roomData = data[floor]?.[room];
                 const isHidden = roomData?.hidden === 1;
-                
+
                 // Update hide button text
                 const hideButton = card.querySelector('.btn-hide');
                 if (hideButton) {
-                    hideButton.innerHTML = isHidden ? 
-                        '<i class="fas fa-eye"></i> Show Room' : 
+                    hideButton.innerHTML = isHidden ?
+                        '<i class="fas fa-eye"></i> Show Room' :
                         '<i class="fas fa-eye-slash"></i> Hide Room';
                 }
-                
+
                 // Update hidden state class
                 if (isHidden) {
                     card.classList.add('is-hidden');
                 } else {
                     card.classList.remove('is-hidden');
                 }
-                
+
                 // Let updateTaskVisibility handle actual visibility
                 updateTaskVisibility();
             });
@@ -752,18 +757,18 @@ function initializeTitleHandling() {
             e.preventDefault();
             const menu = document.getElementById('colorLabelMenu');
             const input = document.getElementById('labelInput');
-            
+
             // Position the menu at the click location
             menu.style.display = 'block';
             menu.style.left = e.pageX + 'px';
             menu.style.top = e.pageY + 'px';
-            
+
             // Set the current title in the input
             input.value = titleElement.textContent;
-            
+
             // Mark this as a title edit
             menu.dataset.editingTitle = 'true';
-            
+
             // Show the menu
             menu.classList.add('active');
             input.focus();
@@ -775,10 +780,10 @@ function initializeTitleHandling() {
 document.addEventListener('DOMContentLoaded', () => {
     // Initialize WebSocket
     initWebSocket();
-    
+
     // Initialize title handling
     initializeTitleHandling();
-    
+
     // Load showCompleted state from localStorage, default to false if not set
     const savedShowCompleted = localStorage.getItem('showCompleted');
     showCompleted = savedShowCompleted === 'true';
@@ -786,15 +791,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btn) {
         btn.innerHTML = `<i class="fas fa-check"></i> ${showCompleted ? 'Hide Completed' : 'Show Completed'}`;
     }
-    
+
     // First load the progress to ensure all tasks are properly initialized
     loadProgress().then(() => {
         // Then load and apply filters
         loadFilters();
-        
+
         // Initialize task handlers
         initializeTaskHandlers();
-        
+
         // Update task visibility based on showCompleted state
         updateTaskVisibility();
     });
@@ -807,9 +812,9 @@ function initializeTaskHandlers() {
         const handleTaskClick = async (e) => {
             // Don't handle progress clicks if clicking the icon
             if (e.target.closest('.task-header i')) return;
-            
+
             // Only prevent clicks during the completion animation
-            if (task.classList.contains('task-complete-shake') || 
+            if (task.classList.contains('task-complete-shake') ||
                 task.classList.contains('exploding')) {
                 return;
             }
@@ -820,7 +825,7 @@ function initializeTaskHandlers() {
             const currentWidth = parseInt(progressBar.style.width) || 0;
             // Reset to 0 if task is completed, otherwise increment by 20
             const newProgress = currentWidth === 100 ? 0 : currentWidth + 20;
-            
+
             // Play sounds immediately
             if (newProgress === 100) {
                 playCompleteSound();
@@ -829,10 +834,10 @@ function initializeTaskHandlers() {
             } else if (newProgress > currentWidth) {
                 playProgressSound();
             }
-            
+
             // Update progress bar immediately for better feedback
             progressBar.style.width = `${newProgress}%`;
-            
+
             // Get floor and room info from data attributes
             const floor = task.dataset.floor;
             const room = task.dataset.room;
@@ -844,7 +849,7 @@ function initializeTaskHandlers() {
 
         // Left click handler
         task.addEventListener('click', handleTaskClick);
-        
+
         // Right click handler
         task.addEventListener('contextmenu', (e) => {
             e.preventDefault();  // Prevent default context menu
@@ -856,18 +861,18 @@ function initializeTaskHandlers() {
         if (taskIcon) {
             taskIcon.addEventListener('click', (e) => {
                 e.stopPropagation();
-                
+
                 // Get current assignment from the class name
                 const currentClass = Array.from(taskIcon.classList)
                     .find(className => className.startsWith('assigned-'));
                 const currentAssignment = currentClass ? parseInt(currentClass.split('-')[1]) : 0;
                 const newAssignment = (currentAssignment + 1) % 7;
-                
+
                 // Get task info from data attributes
                 const floor = task.dataset.floor;
                 const room = task.dataset.room;
                 const taskId = task.dataset.task;
-                
+
                 updateAssignment(floor, room, taskId, newAssignment)
                     .then(response => response.json())
                     .then(data => {
@@ -876,11 +881,11 @@ function initializeTaskHandlers() {
                             taskIcon.classList.remove(`assigned-${currentAssignment}`);
                             // Add new assignment class
                             taskIcon.classList.add(`assigned-${newAssignment}`);
-                            
+
                             // Update the tooltip text with custom label if it exists
                             const label = customLabels[newAssignment.toString()] || defaultLabels[newAssignment.toString()];
                             taskIcon.setAttribute('data-assignment', label);
-                            
+
                             // Broadcast the assignment change
                             broadcastAction('updateAssignment', {
                                 floor,
@@ -947,18 +952,18 @@ if (dashboardTitle) {
         e.preventDefault();
         const menu = document.getElementById('colorLabelMenu');
         const input = document.getElementById('labelInput');
-        
+
         // Position the menu at the click location
         menu.style.display = 'block';
         menu.style.left = e.pageX + 'px';
         menu.style.top = e.pageY + 'px';
-        
+
         // Set the current title in the input
         input.value = dashboardTitle.textContent;
-        
+
         // Mark this as a title edit
         menu.dataset.editingTitle = 'true';
-        
+
         // Show the menu
         menu.classList.add('active');
         input.focus();
@@ -975,7 +980,7 @@ document.addEventListener('DOMContentLoaded', () => {
             titleElement.textContent = savedTitle;
         }
     }
-    
+
     // Rest of the initialization code...
 });
 
@@ -984,7 +989,7 @@ function initializeColorFilters() {
     document.querySelectorAll('.color-filter').forEach(filter => {
         filter.addEventListener('click', () => {
             const assignment = filter.dataset.assignment;
-            
+
             // Toggle active state
             if (assignment === 'all') {
                 // If clicking 'All', make it the only active filter
@@ -998,7 +1003,7 @@ function initializeColorFilters() {
                 activeFilters.delete('all');
                 document.querySelector('.color-filter[data-assignment="all"]')
                     ?.classList.remove('active');
-                
+
                 // Toggle this filter
                 filter.classList.toggle('active');
                 if (filter.classList.contains('active')) {
@@ -1013,7 +1018,7 @@ function initializeColorFilters() {
                     }
                 }
             }
-            
+
             // Update visibility
             updateTaskVisibility();
         });
@@ -1024,7 +1029,7 @@ function toggleShowCompleted(fromBroadcast = false) {
     showCompleted = !showCompleted;
     // Save to localStorage immediately when toggled
     localStorage.setItem('showCompleted', showCompleted);
-    
+
     const btn = document.getElementById('show-completed-btn');
     btn.innerHTML = `<i class="fas fa-check"></i> ${showCompleted ? 'Hide Completed' : 'Show Completed'}`;
     updateTaskVisibility();
@@ -1036,7 +1041,7 @@ function toggleShowCompleted(fromBroadcast = false) {
 
 function createParticles(element, isRoom = false) {
     if (!element || !element.isConnected) return;
-    
+
     // Get or create particles container
     let container = document.getElementById('particles-container');
     if (!container) {
@@ -1051,31 +1056,31 @@ function createParticles(element, isRoom = false) {
         container.style.zIndex = '9999';
         document.body.appendChild(container);
     }
-    
+
     const rect = element.getBoundingClientRect();
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
-    
+
     const particleCount = isRoom ? 30 : 15;
-    
+
     for (let i = 0; i < particleCount; i++) {
         const particle = document.createElement('div');
         particle.className = `particle ${isRoom ? 'room-particle' : ''}`;
-        
+
         // Calculate random end position
         const angle = (Math.random() * 360) * (Math.PI / 180);
         const distance = isRoom ? Math.random() * 300 + 100 : Math.random() * 150 + 50;
         const tx = Math.cos(angle) * distance;
         const ty = Math.sin(angle) * distance;
-        
+
         // Set initial position
         particle.style.left = `${centerX}px`;
         particle.style.top = `${centerY}px`;
         particle.style.setProperty('--tx', `${tx}px`);
         particle.style.setProperty('--ty', `${ty}px`);
-        
+
         container.appendChild(particle);
-        
+
         // Clean up particle after animation
         particle.addEventListener('animationend', () => {
             if (container.contains(particle)) {
@@ -1099,7 +1104,7 @@ function checkRoomCompletion(floor, roomName) {
         playRoomCompleteSound();
         createParticles(roomCard, true);
         roomCard.classList.add('exploding');
-        
+
         roomCard.addEventListener('animationend', () => {
             if (!showCompleted && roomCard.parentElement) {
                 roomCard.parentElement.removeChild(roomCard);
@@ -1111,7 +1116,7 @@ function checkRoomCompletion(floor, roomName) {
 // Update the task completion handler
 function handleTaskCompletion(task, floor, room) {
     const isDashboardView = !document.querySelector('.room-view');
-    
+
     // Add shake animation first
     task.classList.add('task-complete-shake');
 
@@ -1124,7 +1129,7 @@ function handleTaskCompletion(task, floor, room) {
             if (task.isConnected) {
                 createParticles(task);
                 task.classList.add('exploding');
-                
+
                 // Always remove exploding class after animation
                 task.addEventListener('animationend', () => {
                     task.classList.remove('exploding');
@@ -1132,7 +1137,7 @@ function handleTaskCompletion(task, floor, room) {
                         task.style.display = 'none';
                     }
                 }, { once: true });
-                
+
                 // Check room completion immediately
                 const roomCard = task.closest('.room-card');
                 if (roomCard) {
@@ -1146,11 +1151,11 @@ function handleTaskCompletion(task, floor, room) {
                         setTimeout(() => {
                             playRoomCompleteSound();
                             createParticles(roomCard, true);
-                            
+
                             // Wait for particles to mostly finish (800ms) before fading room
                             setTimeout(() => {
                                 roomCard.classList.add('exploding');
-                                
+
                                 roomCard.addEventListener('animationend', () => {
                                     roomCard.classList.remove('exploding');
                                     if (!showCompleted) {
@@ -1166,7 +1171,7 @@ function handleTaskCompletion(task, floor, room) {
             // Room view handling
             createParticles(task);
             task.classList.add('exploding');
-            
+
             // Always remove exploding class after animation
             task.addEventListener('animationend', () => {
                 task.classList.remove('exploding');
@@ -1174,7 +1179,7 @@ function handleTaskCompletion(task, floor, room) {
                     task.style.display = 'none';
                 }
             }, { once: true });
-            
+
             // Check if all tasks in room are complete
             const roomView = task.closest('.room-view');
             const tasks = roomView.querySelectorAll('.task');
@@ -1188,10 +1193,10 @@ function handleTaskCompletion(task, floor, room) {
                 setTimeout(() => {
                     // Play the huge success sound
                     playRoomCompleteSound();
-                    
+
                     // Create explosion particles from each task
                     tasks.forEach(t => createParticles(t, true));
-                    
+
                     // Create additional particles from corners and center
                     const corners = [
                         {x: 0, y: 0}, {x: window.innerWidth, y: 0},
@@ -1199,10 +1204,10 @@ function handleTaskCompletion(task, floor, room) {
                         {x: window.innerWidth/2, y: window.innerHeight/2}
                     ];
                     corners.forEach(pos => createParticlesAtPosition(pos.x, pos.y, true));
-                    
+
                     // Add explosion class to room view
                     roomView.classList.add('room-exploding');
-                    
+
                     // Redirect to dashboard after animation
                     setTimeout(() => {
                         // Store showCompleted state in localStorage before redirect
@@ -1232,26 +1237,26 @@ function createParticlesAtPosition(x, y, isRoom = false) {
         container.style.zIndex = '9999';
         document.body.appendChild(container);
     }
-    
+
     const particleCount = isRoom ? 30 : 15;
-    
+
     for (let i = 0; i < particleCount; i++) {
         const particle = document.createElement('div');
         particle.className = `particle ${isRoom ? 'room-particle' : ''}`;
-        
+
         // Calculate random end position
         const angle = (Math.random() * 360) * (Math.PI / 180);
         const distance = isRoom ? Math.random() * 400 + 200 : Math.random() * 150 + 50;
         const tx = Math.cos(angle) * distance;
         const ty = Math.sin(angle) * distance;
-        
+
         particle.style.left = `${x}px`;
         particle.style.top = `${y}px`;
         particle.style.setProperty('--tx', `${tx}px`);
         particle.style.setProperty('--ty', `${ty}px`);
-        
+
         container.appendChild(particle);
-        
+
         particle.addEventListener('animationend', () => {
             if (container.contains(particle)) {
                 container.removeChild(particle);
@@ -1276,4 +1281,4 @@ window.addEventListener('popstate', function(event) {
     if (window.location.pathname === '/') {
         broadcastDashboardNavigation();
     }
-}); 
+});

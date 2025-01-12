@@ -68,9 +68,10 @@
                 </div>
             </div>
         </header>
-        
+
         <div class="floors-container">
             {% for floor, rooms in config.items() %}
+            {% if floor in ['upstairs', 'downstairs'] %}
             <div class="floor" data-floor="{{ floor }}">
                 <h2>
                     <i class="fas fa-arrow-{{ 'up' if floor == 'upstairs' else 'down' }}"></i>
@@ -82,7 +83,7 @@
                         <div class="progress" id="{{ floor }}-progress"></div>
                     </div>
                 </div>
-                
+
                 <div class="rooms">
                     {% for room_name, room_data in rooms.items() %}
                     <div class="room-card">
@@ -92,12 +93,12 @@
                                 {{ room_name }}
                             </h3>
                         </a>
-                        
+
                         <div class="tasks">
                             {% for task in room_data.tasks %}
                             <div class="task" data-floor="{{ floor }}" data-room="{{ room_name }}" data-task="{{ task.name }}">
                                 <div class="task-header">
-                                    <i class="fas fa-{{ task.icon }} assigned-{{ task.assignment|default(0) }}" 
+                                    <i class="fas fa-{{ task.icon }} assigned-{{ task.assignment|default(0) }}"
                                        data-assignment="{{ 'Unassigned' if not task.assignment else config.color_labels[{
                                            1: 'magenta',
                                            2: 'orange',
@@ -114,7 +115,7 @@
                             </div>
                             {% endfor %}
                         </div>
-                        
+
                         <div class="room-footer">
                             <button onclick="resetRoom('{{ floor }}', '{{ room_name }}')" class="btn-reset">
                                 <i class="fas fa-redo-alt"></i> Reset Room
@@ -127,14 +128,15 @@
                     {% endfor %}
                 </div>
             </div>
+            {% endif %}
             {% endfor %}
         </div>
     </div>
-    
+
     <div class="context-menu" id="showHiddenMenu" style="display: none;">
         <button onclick="resetHidden()">Reset Hidden Rooms</button>
     </div>
-    
+
     <div class="context-menu" id="colorLabelMenu" style="display: none;">
         <div class="label-editor">
             <input type="text" id="labelInput" placeholder="Enter label">
@@ -144,7 +146,7 @@
             </div>
         </div>
     </div>
-    
+
     <script>
         // Initialize color labels from server config
         const serverLabels = {
@@ -160,4 +162,4 @@
     </script>
     <script src="{{ url_for('static', filename='dashboard.js') }}"></script>
 </body>
-</html> 
+</html>

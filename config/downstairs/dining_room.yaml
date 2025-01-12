@@ -3,13 +3,22 @@ icon: utensils
 tasks:
   - name: Clear Table
     icon: trash
+
   - name: Wipe Table & Chairs
     icon: soap
+
   - name: Sweep Floor
     icon: broom
+
   - name: Mop Floor
     icon: paintbrush
+
   - name: Arrange Chairs
-    icon: chair 
+    icon: chair
+
   - name: Pick Up Trash
     icon: trash
+
+  - name: Put away things on floor
+    icon: tools
+
